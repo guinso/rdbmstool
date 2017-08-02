@@ -84,7 +84,8 @@ func getDataColumnDefinition(db rdbmstool.DbHandlerProxy, dbName string, tableNa
 	//TODO: get each column definition
 	rows, err := db.Query("SELECT column_name, ordinal_position, column_default, "+
 		"is_nullable, data_type, character_maximum_length,  "+
-		"character_octet_length, numeric_precision, datetime_precision, "+
+		"character_octet_length, numeric_precision, "+
+		"numeric_scale, datetime_precision, "+
 		"character_set_name, collation_name, column_key "+
 		"FROM information_schema.columns "+
 		"WHERE table_schema=? AND table_name=?", dbName, tableName)
@@ -104,6 +105,7 @@ func getDataColumnDefinition(db rdbmstool.DbHandlerProxy, dbName string, tableNa
 		var charMaxLength sql.NullInt64
 		var numericLength sql.NullInt64
 		var numericPrecision sql.NullInt64
+		var numericScale sql.NullInt64
 		var datetimePrecision sql.NullInt64
 		var charset sql.NullString
 		var collation sql.NullString
@@ -111,7 +113,7 @@ func getDataColumnDefinition(db rdbmstool.DbHandlerProxy, dbName string, tableNa
 
 		err := rows.Scan(&columnName, &ordinalPosition, &defaultValue,
 			&isNull, &dataType, &charMaxLength, &numericLength,
-			&numericPrecision, &datetimePrecision, &charset, &collation, &colKey)
+			&numericPrecision, &numericScale, &datetimePrecision, &charset, &collation, &colKey)
 
 		if err != nil {
 			rows.Close()
@@ -157,11 +159,7 @@ func getDataColumnDefinition(db rdbmstool.DbHandlerProxy, dbName string, tableNa
 			colDef.Length = int(datetimePrecision.Int64)
 			break
 		case "date":
-			if !datetimePrecision.Valid {
-				return nil, fmt.Errorf("%s.%s has null value on date length", tableName, columnName)
-			}
 			colDef.DataType = rdbmstool.DATE
-			colDef.Length = int(datetimePrecision.Int64)
 			break
 		case "float":
 			colDef.DataType = rdbmstool.FLOAT
@@ -170,15 +168,15 @@ func getDataColumnDefinition(db rdbmstool.DbHandlerProxy, dbName string, tableNa
 			colDef.DataType = rdbmstool.DOUBLE
 			break
 		case "decimal":
-			if !numericLength.Valid {
-				return nil, fmt.Errorf("%s.%s has null value on decimal length", tableName, columnName)
-			}
-			if !numericPrecision.Valid {
+			if !numericScale.Valid {
 				return nil, fmt.Errorf("%s.%s has null value on decimal precision", tableName, columnName)
 			}
+			if !numericPrecision.Valid {
+				return nil, fmt.Errorf("%s.%s has null value on decimal length", tableName, columnName)
+			}
 			colDef.DataType = rdbmstool.DECIMAL
-			colDef.Length = int(numericLength.Int64)
-			colDef.DecimalPrecision = int(numericPrecision.Int64)
+			colDef.Length = int(numericPrecision.Int64)
+			colDef.DecimalPrecision = int(numericScale.Int64)
 			break
 		default:
 			return nil, fmt.Errorf("%s.%s datatype(%s) is not support by package MySQL.MetaQuery",

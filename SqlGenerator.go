@@ -257,13 +257,13 @@ func generatePrimaryKeySQL(tableDef *TableDefinition) (string, error) {
 	if length > 0 {
 		for index, pk := range tableDef.PrimaryKey {
 			if index == 0 {
-				sql = pk
+				sql = "`" + pk + "`"
 			} else {
-				sql = sql + "," + pk
+				sql = sql + ",`" + pk + "`"
 			}
 		}
 
-		sql = fmt.Sprintf("PRIMARY KEY(`%s`)", sql)
+		sql = fmt.Sprintf("PRIMARY KEY(%s)", sql)
 	} else {
 		sql = ""
 	}
