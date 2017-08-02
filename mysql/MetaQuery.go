@@ -80,6 +80,30 @@ func GetTableNames(db rdbmstool.DbHandlerProxy, databaseName string, tableNamePa
 	return result, nil
 }
 
+//GetLinkedFK get list of datatable(s) which has FK linked to specifed table name
+func GetLinkedFK(db rdbmstool.DbHandlerProxy, databaseName string, tableName string) ([]string, error) {
+	rows, err := db.Query("SELECT table_name from information_schema.key_column_usage "+
+		"WHERE table_schema = ? AND referenced_table_name = ?", databaseName, tableName)
+	if err != nil {
+		return nil, err
+	}
+
+	result := []string{}
+	for rows.Next() {
+		var tmp string
+		scanErr := rows.Scan(&tmp)
+		if scanErr != nil {
+			return nil, scanErr
+		}
+
+		result = append(result, tmp)
+	}
+
+	rows.Close()
+
+	return result, nil
+}
+
 func getDataColumnDefinition(db rdbmstool.DbHandlerProxy, dbName string, tableName string) ([]rdbmstool.ColumnDefinition, error) {
 	//TODO: get each column definition
 	rows, err := db.Query("SELECT column_name, ordinal_position, column_default, "+
