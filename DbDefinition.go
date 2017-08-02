@@ -19,6 +19,33 @@ const (
 	DOUBLE   ColumnDataType = iota + 1
 )
 
+//String return database's data column type in string format
+func (colType ColumnDataType) String() string {
+	if colType == CHAR {
+		return "CHAR"
+	} else if colType == INTEGER {
+		return "INTEGER"
+	} else if colType == DECIMAL {
+		return "DECIMAL"
+	} else if colType == FLOAT {
+		return "FLOAT"
+	} else if colType == TEXT {
+		return "TEXT"
+	} else if colType == DATE {
+		return "DATE"
+	} else if colType == DATETIME {
+		return "DATETIME"
+	} else if colType == BOOLEAN {
+		return "BOOLEAN"
+	} else if colType == VARCHAR {
+		return "VARCHAR"
+	} else if colType == DOUBLE {
+		return "DOUBLE"
+	} else {
+		return "unknown"
+	}
+}
+
 //DbHandlerProxy interface to accept sql.Db or sql.Tx in order to allow execute SQL without
 //knowning presence of transaction or not
 type DbHandlerProxy interface {
@@ -50,8 +77,9 @@ type ColumnDefinition struct {
 
 // ForeignKeyDefinition is information to create a RDBMS FK
 type ForeignKeyDefinition struct {
-	//ColumnName         string
+	Name               string //foreign key name display on database (optional)
 	ReferenceTableName string
+	//ColumnName         string
 	//ReferenceSchemaName string
 	//ReferenceColumnName string
 	Columns []FKColumnDefinition

@@ -336,6 +336,7 @@ func getForeignKey(db rdbmstool.DbHandlerProxy,
 			//since order by constraint_name column, same group FK shall keep in same row
 			//new row created if new FK key discovered
 			result = append(result, rdbmstool.ForeignKeyDefinition{
+				Name:               currentConstraintName,
 				ReferenceTableName: refTableName,
 				Columns:            []rdbmstool.FKColumnDefinition{}})
 			currentConstraintName = constraintName

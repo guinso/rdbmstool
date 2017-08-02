@@ -3,6 +3,7 @@ package rdbmstool
 import (
 	"errors"
 	"fmt"
+	"strings"
 )
 
 const (
@@ -219,15 +220,19 @@ func generateForeignKeySQL(tableDef *TableDefinition) (string, error) {
 				if colIndex == 0 {
 					baseCols = "`" + coll.ColumnName + "`"
 					refCols = "`" + coll.RefColumnName + "`"
+				} else {
+					baseCols += "," + "`" + coll.ColumnName + "`"
+					refCols += "," + "`" + coll.RefColumnName + "`"
 				}
-
-				baseCols += "," + "`" + coll.ColumnName + "`"
-				refCols += "," + "`" + coll.RefColumnName + "`"
 			}
 
-			tmpSQL = fmt.Sprintf("CONSTRAINT `%s_ibfk_%d` FOREIGN KEY (%s) REFERENCES `%s` (%s)",
-				tableDef.Name, index+1, baseCols,
-				fk.ReferenceTableName, refCols)
+			if strings.Compare(fk.Name, "") == 0 {
+				tmpSQL = fmt.Sprintf("CONSTRAINT `%s_ibfk_%d` FOREIGN KEY (%s) REFERENCES `%s` (%s)",
+					tableDef.Name, index+1, baseCols,
+					fk.ReferenceTableName, refCols)
+			} else {
+				tmpSQL = fk.Name
+			}
 
 			if index == 0 {
 				sql = tmpSQL
