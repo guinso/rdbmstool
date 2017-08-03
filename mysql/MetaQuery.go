@@ -159,11 +159,11 @@ func getDataColumnDefinition(db rdbmstool.DbHandlerProxy, dbName string, tableNa
 			colDef.Length = int(charMaxLength.Int64)
 			break
 		case "int":
-			if !numericLength.Valid {
+			if !numericPrecision.Valid {
 				return nil, fmt.Errorf("%s.%s has null value on numeric length", tableName, columnName)
 			}
 			colDef.DataType = rdbmstool.INTEGER
-			colDef.Length = int(numericLength.Int64)
+			colDef.Length = int(numericPrecision.Int64)
 			break
 		case "text":
 			colDef.DataType = rdbmstool.TEXT
@@ -335,8 +335,9 @@ func getForeignKey(db rdbmstool.DbHandlerProxy,
 			"a.`TABLE_NAME` =   b.`TABLE_NAME` "+
 			"WHERE a.`TABLE_SCHEMA` = ? AND "+
 			"a.`TABLE_NAME` = ? AND "+
-			"b.`CONSTRAINT_TYPE` = 'FOREIGN KEY' "+
-			"ORDER BY a.`CONSTRAINT_NAME`", dbName, tableName)
+			"b.`CONSTRAINT_TYPE` = 'FOREIGN KEY' AND "+
+			"a.`REFERENCED_TABLE_NAME` != ? "+
+			"ORDER BY a.`CONSTRAINT_NAME`", dbName, tableName, tableName)
 	if err != nil {
 		return nil, err
 	}
