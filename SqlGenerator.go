@@ -10,6 +10,12 @@ const (
 	collate = "utf8mb4_unicode_ci"
 )
 
+//SQLGenerator generate SQL statement interface
+type SQLGenerator interface {
+	SQL() (string, error)
+	Validate() error
+}
+
 //GenerateTableSQL to generate "create table" SQL statement
 func GenerateTableSQL(tableDef *TableDefinition) (string, error) {
 	if tableDef == nil {
