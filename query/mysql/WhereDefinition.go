@@ -11,11 +11,11 @@ func NewWhereSQLBuilder(operator rdbmstool.WhereOperator,
 			LeftExpression:  leftHandSide,
 			RightExpression: rightHandSide}}
 
-	return &WhereSQLBuilder{GroupWhere: &group}
+	return &WhereSQLBuilder{groupWhere: []rdbmstool.GroupWhereDefinition{group}}
 }
 
 type WhereSQLBuilder struct {
-	GroupWhere *rdbmstool.GroupWhereDefinition
+	groupWhere []rdbmstool.GroupWhereDefinition
 
 	//And(WhereOperator, string, string)
 	//Or(WhereOperator, string, string)
@@ -26,6 +26,9 @@ type WhereSQLBuilder struct {
 
 func (whereBuilder *WhereSQLBuilder) And(operator rdbmstool.WhereOperator,
 	leftExpression string, rightExpression string) *WhereSQLBuilder {
+
+	whereBuilder.groupWhere = append(whereBuilder.groupWhere, 
+	})
 
 	return whereBuilder
 }
