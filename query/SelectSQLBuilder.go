@@ -6,12 +6,12 @@ type SelectSQLBuilder interface {
 	From(*FromDefinition) *SelectSQLBuilder
 	Join(*JoinDefinition) *SelectSQLBuilder
 	Where(*ConditionGroupDefinition) *SelectSQLBuilder
-	GroupBy(string) *SelectSQLBuilder
-	Having(string) *SelectSQLBuilder
-	OrderBy(string) *SelectSQLBuilder
-	Limit(int, int) *SelectSQLBuilder
+	GroupBy(*GroupByDefinition) *SelectSQLBuilder
+	Having(*ConditionGroupDefinition) *SelectSQLBuilder
+	OrderBy(*OrderByDefinition) *SelectSQLBuilder
+	Limit(*LimitDefinition) *SelectSQLBuilder
 	Union(*SelectSQLBuilder) *SelectSQLBuilder
 
 	SQL() (string, error)
-	GenerateDefinition() *SelectDefinition
+	//GenerateDefinition() *SelectDefinition
 }
