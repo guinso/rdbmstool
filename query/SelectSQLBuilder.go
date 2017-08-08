@@ -60,8 +60,11 @@ func (builder *SelectSQLBuilder) Where(where *ConditionGroupDefinition) *SelectS
 }
 
 //GroupBy add group by statment
-func (builder *SelectSQLBuilder) GroupBy(groupBy *GroupByDefinition) *SelectSQLBuilder {
-	builder.selectDefinition.GroupBy = append(builder.selectDefinition.GroupBy, *groupBy)
+func (builder *SelectSQLBuilder) GroupBy(expression string, isAscending bool) *SelectSQLBuilder {
+	builder.selectDefinition.GroupBy = append(builder.selectDefinition.GroupBy, GroupByDefinition{
+		Expression: expression,
+		IsAcending: isAscending})
+
 	return builder
 }
 
@@ -72,14 +75,20 @@ func (builder *SelectSQLBuilder) Having(having *ConditionGroupDefinition) *Selec
 }
 
 //OrderBy add order by statement
-func (builder *SelectSQLBuilder) OrderBy(orderBy *OrderByDefinition) *SelectSQLBuilder {
-	builder.selectDefinition.OrderBy = append(builder.selectDefinition.OrderBy, *orderBy)
+func (builder *SelectSQLBuilder) OrderBy(expression string, isAscending bool) *SelectSQLBuilder {
+	builder.selectDefinition.OrderBy = append(builder.selectDefinition.OrderBy, OrderByDefinition{
+		Expression:  expression,
+		IsAscending: isAscending})
+
 	return builder
 }
 
 //Limit set limit statement
-func (builder *SelectSQLBuilder) Limit(limit *LimitDefinition) *SelectSQLBuilder {
-	builder.selectDefinition.Limit = limit
+func (builder *SelectSQLBuilder) Limit(rowCount int, offset int) *SelectSQLBuilder {
+	builder.selectDefinition.Limit = &LimitDefinition{
+		RowCount: rowCount,
+		Offset:   offset}
+
 	return builder
 }
 

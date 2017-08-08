@@ -3,7 +3,6 @@ package query
 import (
 	"errors"
 	"fmt"
-	"strings"
 )
 
 //JoinType type for JOIN clause: join, inner join, outer join, cross join, etc.
@@ -33,13 +32,13 @@ func (join *JoinDefinition) SQL() (string, error) {
 
 	switch join.Type {
 	case JOIN:
-		result = result + "JOIN "
+		result = result + "JOIN"
 		break
 	case INNER_JOIN:
-		result = result + "INNER JOIN "
+		result = result + "INNER JOIN"
 		break
 	case OUTER_JOIN:
-		result = result + "OUTER JOIN "
+		result = result + "OUTER JOIN"
 		break
 	default:
 		return "", fmt.Errorf("Unsupported JOIN type found: %d", join.Type)
@@ -58,7 +57,7 @@ func (join *JoinDefinition) SQL() (string, error) {
 		return "", errors.New("JoinDefinition source field and subQuery field cannot be NULL")
 	}
 
-	if strings.Compare(join.Alias, "") == 0 {
+	if len(join.Alias) > 0 {
 		result = result + " AS " + join.Alias
 	}
 

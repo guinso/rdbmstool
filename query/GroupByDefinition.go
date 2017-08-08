@@ -2,13 +2,13 @@ package query
 
 //GroupByDefinition SQL Group By statement definition
 type GroupByDefinition struct {
-	Expression  string
-	IsDecending bool
+	Expression string
+	IsAcending bool
 }
 
 //SQL generate SQL string for Group By statement
 func (groupBy *GroupByDefinition) SQL() (string, error) {
-	if groupBy.IsDecending {
+	if !groupBy.IsAcending {
 		return groupBy.Expression + " DESC", nil
 	}
 
