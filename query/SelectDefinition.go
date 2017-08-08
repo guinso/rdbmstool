@@ -51,7 +51,7 @@ func (query *SelectDefinition) SQL() (string, error) {
 		if index == 0 {
 			result = "SELECT " + sql
 		} else {
-			result = ", " + sql
+			result = result + ", " + sql
 		}
 	}
 

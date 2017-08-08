@@ -46,14 +46,14 @@ func (join *JoinDefinition) SQL() (string, error) {
 	}
 
 	if len(join.source) > 0 {
-		result = join.source
+		result = result + " " + join.source
 	} else if join.subQuery != nil {
 		sql, err := join.subQuery.SQL()
 		if err != nil {
 			return "", err
 		}
 
-		result = sql
+		result = result + " " + sql
 	} else {
 		return "", errors.New("JoinDefinition source field and subQuery field cannot be NULL")
 	}
