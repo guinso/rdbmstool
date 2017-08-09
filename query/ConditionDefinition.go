@@ -70,16 +70,38 @@ type ConditionGroupDefinition struct {
 	operators []ConditionGroupOperator
 }
 
-//Add concate a simple condition into condition group
+//And concate a simple AND condition into condition group
 //EXAMPLE: (a && b)
-func (condGroup *ConditionGroupDefinition) Add(operator ConditionGroupOperator, conditionItem *ConditionDefinition) {
-	condGroup.items = append(condGroup.items, ConditionGroupDefinition{condition: conditionItem})
+func (condGroup *ConditionGroupDefinition) And(
+	operator ConditionOperator, leftExpression string, rightExpression string) *ConditionGroupDefinition {
+
+	condGroup.items = append(condGroup.items, ConditionGroupDefinition{
+		condition: NewConditionDefinition(operator, leftExpression, rightExpression)})
+	condGroup.operators = append(condGroup.operators, AND)
+
+	return condGroup
+}
+
+//Or concate a simple OR condition into condition group
+//EXAMPLE: (a || b)
+func (condGroup *ConditionGroupDefinition) Or(
+	operator ConditionOperator, leftExpression string, rightExpression string) *ConditionGroupDefinition {
+
+	condGroup.items = append(condGroup.items, ConditionGroupDefinition{
+		condition: NewConditionDefinition(operator, leftExpression, rightExpression)})
+	condGroup.operators = append(condGroup.operators, OR)
+
+	return condGroup
 }
 
 //AddGroup concate a sub-condition group into condition group
 //EXAMPLE: (a && (new-sub-condition))
-func (condGroup *ConditionGroupDefinition) AddGroup(operator ConditionGroupOperator, groupItem *ConditionGroupDefinition) {
+func (condGroup *ConditionGroupDefinition) AddGroup(
+	operator ConditionGroupOperator, groupItem *ConditionGroupDefinition) *ConditionGroupDefinition {
 	condGroup.items = append(condGroup.items, *groupItem)
+	condGroup.operators = append(condGroup.operators, operator)
+
+	return condGroup
 }
 
 //SQL generate condition group SQL statement

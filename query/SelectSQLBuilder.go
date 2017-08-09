@@ -59,6 +59,49 @@ func (builder *SelectSQLBuilder) Where(where *ConditionGroupDefinition) *SelectS
 	return builder
 }
 
+//WhereAnd append where statement with AND operator
+//if where statement is NULL, it will init as first condition and omit AND
+func (builder *SelectSQLBuilder) WhereAnd(
+	operator ConditionOperator, leftExpression string, rightExpression string) *SelectSQLBuilder {
+
+	if builder.selectDefinition.Where == nil {
+		builder.selectDefinition.Where = NewConditionGroupDefinition(operator, leftExpression, rightExpression)
+	} else {
+		builder.selectDefinition.Where.And(operator, leftExpression, rightExpression)
+	}
+
+	return builder
+}
+
+//WhereOR append where statement with OR operator
+//if where statement is NULL, it will init as first condition and omit OR
+func (builder *SelectSQLBuilder) WhereOR(
+	operator ConditionOperator, leftExpression string, rightExpression string) *SelectSQLBuilder {
+
+	if builder.selectDefinition.Where == nil {
+		builder.selectDefinition.Where = NewConditionGroupDefinition(operator, leftExpression, rightExpression)
+	} else {
+		builder.selectDefinition.Where.Or(operator, leftExpression, rightExpression)
+	}
+
+	return builder
+}
+
+//WhereGroup append Where statement with group condition
+//operator: group condition, example OR, AND
+//condition: nested condition, example (a =3 AND (b > 4 OR d <> false))
+func (builder *SelectSQLBuilder) WhereGroup(
+	operator ConditionGroupOperator, condition *ConditionGroupDefinition) *SelectSQLBuilder {
+
+	if builder.selectDefinition.Where == nil {
+		builder.selectDefinition.Where = condition
+	} else {
+		builder.selectDefinition.Where.AddGroup(operator, condition)
+	}
+
+	return builder
+}
+
 //GroupBy add group by statment
 func (builder *SelectSQLBuilder) GroupBy(expression string, isAscending bool) *SelectSQLBuilder {
 	builder.selectDefinition.GroupBy = append(builder.selectDefinition.GroupBy, GroupByDefinition{
