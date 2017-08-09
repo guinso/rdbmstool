@@ -12,9 +12,8 @@ func TestSelectSQLBuilder(t *testing.T) {
 		JoinSimple("family", "c", OUTER_JOIN, "a.surname", "c.surname", EQUAL).
 		WhereAnd(EQUAL, "a.l", "4").
 		WhereOR(GREATER_THAN, "a.age", "4").
-		WhereGroup(AND,
-			NewConditionGroupDefinition(EQUAL, "b.name", "'john'").
-				And(NOT_EQUAL, "b.k", "8")).
+		WhereGroup(AND, NewConditionGroupDefinition(EQUAL, "b.name", "'john'").
+			And(NOT_EQUAL, "b.k", "8")).
 		OrderBy("a.name", true).OrderBy("age", true).
 		GroupBy("b.name", true).
 		Having(NewConditionGroupDefinition(EQUAL, "a.name", "'john'")).
