@@ -82,6 +82,31 @@ func lexText(lex *Lexer) StateFn {
 		}
 
 		//looking for parameter
+		if lex.peek() == ':' && isLetter(lex.peekAhead(2)) {
+			lex.next() //take semi colon
+			lex.next() //take letter
+
+			for { //break when reach white space
+				r := lex.next()
+
+				if isWhiteSpace(r) {
+					break
+				} else if isLetter(r) || isNumeric(r) || r == '_' {
+					continue
+				} else if r == eof {
+					break
+				}
+			}
+
+			lex.emit(TokenParameter)
+
+			if lex.start >= len(lex.input) {
+				lex.emit(TokenEOF)
+				return nil
+			}
+
+			return lexText
+		}
 
 		//looking for number
 
@@ -201,5 +226,34 @@ func lexKeyword(lex *Lexer, keyword string, tokenTypee TokenType) StateFn {
 	lex.pos += lex.width
 
 	lex.emit(tokenTypee)
+	return lexText
+}
+
+func lexParameter(lex *Lexer) StateFn {
+	lex.next() //take semi colon
+	lex.next() //take letter
+
+	for { //break when reach white space
+		r := lex.next()
+
+		if isWhiteSpace(r) || r == eof {
+			break
+		} else if isLetter(r) || isNumeric(r) || r == '_' {
+			continue
+		} else {
+			//handler syntax error
+			return lex.errorf("syntax error detected on lexing SQL parameter at column %d", lex.pos)
+		}
+	}
+
+	//push parameter token to feeder
+	lex.emit(TokenParameter)
+
+	//goto end of process if hit end of file
+	if lex.start >= len(lex.input) {
+		lex.emit(TokenEOF)
+		return nil
+	}
+
 	return lexText
 }
