@@ -8,8 +8,12 @@ import (
 	"github.com/guinso/rdbmstool"
 )
 
+//MySQLMetaTable get MySQL data table meta information
+type MetaTable struct {
+}
+
 //GetTableDefinition get all datatable's column(s) definition
-func GetTableDefinition(db rdbmstool.DbHandlerProxy, dbName string,
+func (meta *MetaTable) GetTableDefinition(db rdbmstool.DbHandlerProxy, dbName string,
 	tableName string) (*rdbmstool.TableDefinition, error) {
 
 	tableDef := rdbmstool.TableDefinition{
@@ -55,7 +59,7 @@ func GetTableDefinition(db rdbmstool.DbHandlerProxy, dbName string,
 
 //GetTableNames get list of datatables' name which start with provided search pattern
 //search pattern allow '%' as wild card; example 'hub_%'
-func GetTableNames(db rdbmstool.DbHandlerProxy, databaseName string, tableNamePattern string) ([]string, error) {
+func (meta *MetaTable) GetTableNames(db rdbmstool.DbHandlerProxy, databaseName string, tableNamePattern string) ([]string, error) {
 	rows, err := db.Query("SELECT table_name FROM information_schema.tables"+
 		" where table_schema=? AND table_name LIKE '"+tableNamePattern+"'", databaseName)
 
@@ -80,8 +84,8 @@ func GetTableNames(db rdbmstool.DbHandlerProxy, databaseName string, tableNamePa
 	return result, nil
 }
 
-//GetLinkedFK get list of datatable(s) which has FK linked to specifed table name
-func GetLinkedFK(db rdbmstool.DbHandlerProxy, databaseName string, tableName string) ([]string, error) {
+//getLinkedFK get list of datatable(s) which has FK linked to specifed table name
+func getLinkedFK(db rdbmstool.DbHandlerProxy, databaseName string, tableName string) ([]string, error) {
 	rows, err := db.Query("SELECT table_name from information_schema.key_column_usage "+
 		"WHERE table_schema = ? AND referenced_table_name = ?", databaseName, tableName)
 	if err != nil {
