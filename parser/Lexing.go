@@ -83,29 +83,7 @@ func lexText(lex *Lexer) StateFn {
 
 		//looking for parameter
 		if lex.peek() == ':' && isLetter(lex.peekAhead(2)) {
-			lex.next() //take semi colon
-			lex.next() //take letter
-
-			for { //break when reach white space
-				r := lex.next()
-
-				if isWhiteSpace(r) {
-					break
-				} else if isLetter(r) || isNumeric(r) || r == '_' {
-					continue
-				} else if r == eof {
-					break
-				}
-			}
-
-			lex.emit(TokenParameter)
-
-			if lex.start >= len(lex.input) {
-				lex.emit(TokenEOF)
-				return nil
-			}
-
-			return lexText
+			return lexParameter(lex)
 		}
 
 		//looking for number
