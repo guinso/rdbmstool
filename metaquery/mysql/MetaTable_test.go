@@ -26,6 +26,7 @@ func TestGetForeignKey(t *testing.T) {
 
 	if len(fkDefs) == 0 {
 		t.Error("test.hub_tax_invoice_rev0 should have 3 foreign keys")
+		return
 	}
 
 	if len(fkDefs[0].Columns) == 0 {
@@ -50,6 +51,7 @@ func TestGetUniqueKey(t *testing.T) {
 
 	if len(fkDefs) == 0 {
 		t.Error("test.hub_tax_invoice_rev0 should have 1 unique key")
+		return
 	}
 
 	if len(fkDefs[0].ColumnNames) == 0 {

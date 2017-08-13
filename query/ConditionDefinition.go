@@ -8,16 +8,17 @@ import (
 //ConditionOperator logic operator for WHERE clause: =,<>,>,>=,<,<=, etc.
 type ConditionOperator uint8
 
+//Condition operator constants
 const (
-	EQUAL              ConditionOperator = iota + 1
-	NOT_EQUAL          ConditionOperator = iota + 1
-	GREATER_THAN       ConditionOperator = iota + 1
-	LESS_THAN          ConditionOperator = iota + 1
-	GREATER_THAN_EQUAL ConditionOperator = iota + 1
-	LESS_THAN_EQUAL    ConditionOperator = iota + 1
-	BETWEEN            ConditionOperator = iota + 1
-	LIKE               ConditionOperator = iota + 1
-	IN                 ConditionOperator = iota + 1
+	EQUAL              ConditionOperator = iota
+	NOT_EQUAL                            //ConditionOperator = iota + 1
+	GREATER_THAN                         //ConditionOperator = iota + 1
+	LESS_THAN                            //ConditionOperator = iota + 1
+	GREATER_THAN_EQUAL                   //ConditionOperator = iota + 1
+	LESS_THAN_EQUAL                      //ConditionOperator = iota + 1
+	BETWEEN                              //ConditionOperator = iota + 1
+	LIKE                                 //ConditionOperator = iota + 1
+	IN                                   //ConditionOperator = iota + 1
 )
 
 //ConditionGroupOperator logic operator for WHERE and JOIN clause: AND & OR

@@ -8,12 +8,12 @@ import (
 	"github.com/guinso/rdbmstool"
 )
 
-//MySQLMetaTable get MySQL data table meta information
-type MetaTable struct {
+//MetaQuery get MySQL data table meta information
+type MetaQuery struct {
 }
 
 //GetTableDefinition get all datatable's column(s) definition
-func (meta *MetaTable) GetTableDefinition(db rdbmstool.DbHandlerProxy, dbName string,
+func (meta *MetaQuery) GetTableDefinition(db rdbmstool.DbHandlerProxy, dbName string,
 	tableName string) (*rdbmstool.TableDefinition, error) {
 
 	tableDef := rdbmstool.TableDefinition{
@@ -59,7 +59,7 @@ func (meta *MetaTable) GetTableDefinition(db rdbmstool.DbHandlerProxy, dbName st
 
 //GetTableNames get list of datatables' name which start with provided search pattern
 //search pattern allow '%' as wild card; example 'hub_%'
-func (meta *MetaTable) GetTableNames(db rdbmstool.DbHandlerProxy, databaseName string, tableNamePattern string) ([]string, error) {
+func (meta *MetaQuery) GetTableNames(db rdbmstool.DbHandlerProxy, databaseName string, tableNamePattern string) ([]string, error) {
 	rows, err := db.Query("SELECT table_name FROM information_schema.tables"+
 		" where table_schema=? AND table_name LIKE '"+tableNamePattern+"'", databaseName)
 
