@@ -12,6 +12,7 @@ type Lexer struct {
 	input string         //the string being scanned
 	start int            //start position of this scan
 	pos   int            //position of current scan
+	line  int            //line number of input
 	width int            //length of last rune read from in
 	items chan TokenItem //channel of scanned items
 }
@@ -23,13 +24,39 @@ func (l *Lexer) errorf(format string, args ...interface{}) StateFn {
 	l.items <- TokenItem{
 		TokenError,
 		fmt.Sprintf(format, args...),
-	}
+		l.start,
+		l.line}
+
 	return nil
 }
 
+/*
+// nextItem returns the next item from the input.
+// Called by the parser, not in the lexing goroutine.
+func (l *Lexer) nextItem() TokenItem {
+	item := <-l.items
+	l.lastPos = item.pos
+	return item
+}
+
+// drain drains the output so the lexing goroutine will exit.
+// Called by the parser, not in the lexing goroutine.
+func (l *Lexer) drain() {
+	for range l.items {
+	}
+}
+*/
+
 //emit pass a Token item back to client
 func (l *Lexer) emit(t TokenType) {
-	l.items <- TokenItem{t, l.input[l.start:l.pos]}
+	l.items <- TokenItem{t, l.input[l.start:l.pos], l.start, l.line}
+
+	// Some items contain text internally. If so, count their newlines.
+	switch t {
+	case TokenText:
+		l.line += strings.Count(l.input[l.start:l.pos], "\n")
+	}
+
 	l.start = l.pos
 }
 
@@ -71,7 +98,7 @@ func (l *Lexer) peek() rune {
 	return r
 }
 
-// peekAhead get rune ahead current
+// peekAhead read rune ahead current without alter state machine
 func (l *Lexer) peekAhead(step int) rune {
 	var r rune
 
@@ -93,6 +120,11 @@ func (l *Lexer) peekAhead(step int) rune {
 // Can be called only once per call of next.
 func (l *Lexer) backup() {
 	l.pos -= l.width
+
+	// Correct newline count.
+	if l.width == 1 && l.input[l.pos] == '\n' {
+		l.line--
+	}
 }
 
 // next returns the next rune in the input.
@@ -102,9 +134,13 @@ func (l *Lexer) next() rune {
 		return eof
 	}
 
-	var r rune
-	r, l.width = utf8.DecodeRuneInString(l.input[l.pos:])
+	r, w := utf8.DecodeRuneInString(l.input[l.pos:])
+	l.width = w
 	l.pos += l.width
+	if r == '\n' {
+		l.line++
+	}
+
 	return r
 }
 
@@ -115,13 +151,25 @@ func (l *Lexer) ignore() {
 
 // move position forward
 func (l *Lexer) fastForward(step int) error {
-	if l.pos+step >= len(l.input) {
-		return fmt.Errorf("unable to fast forward as it exceed input string length, "+
-			"input string length:%d, fast forward position:%d", len(l.input), l.pos+step)
-	}
+	backupStart := l.start
+	backupPos := l.pos
+	backupLine := l.line
+	backupWidth := l.width
 
-	l.width = 1
-	l.pos += step
+	for i := 0; i < step; {
+		r := l.next()
+
+		if r == eof {
+			//restore back state
+			l.start = backupStart
+			l.pos = backupPos
+			l.width = backupWidth
+			l.line = backupLine
+
+			return fmt.Errorf("unable to fast forward as it reach end of file(EOF)")
+		}
+		i += l.width
+	}
 
 	return nil
 }
