@@ -1,3 +1,4 @@
+//Package parser lexer.go is mainly referenced from github.com/golang/go/src/text/template/parse/lex.go
 package parser
 
 import (
@@ -6,23 +7,35 @@ import (
 	"unicode/utf8"
 )
 
-//Lexer hold the state of the scanner
-type Lexer struct {
+//lex create a new scanner for the input string
+func lex(name, input string) *lexer {
+	l := &lexer{
+		name:  name,
+		input: input,
+		items: make(chan tokenItem),
+		line:  1}
+
+	go l.run()
+	return l
+}
+
+//lexer hold the state of the scanner
+type lexer struct {
 	name  string         //used only for error report
 	input string         //the string being scanned
 	start int            //start position of this scan
 	pos   int            //position of current scan
 	line  int            //line number of input
 	width int            //length of last rune read from in
-	items chan TokenItem //channel of scanned items
+	items chan tokenItem //channel of scanned items
 }
 
 // error returns an error token and terminates the scan
 // by passing back a nil pointer that will be the next
 // state, terminating l.run.
-func (l *Lexer) errorf(format string, args ...interface{}) StateFn {
-	l.items <- TokenItem{
-		TokenError,
+func (l *lexer) errorf(format string, args ...interface{}) StateFn {
+	l.items <- tokenItem{
+		tokenError,
 		fmt.Sprintf(format, args...),
 		l.start,
 		l.line}
@@ -30,30 +43,28 @@ func (l *Lexer) errorf(format string, args ...interface{}) StateFn {
 	return nil
 }
 
-/*
 // nextItem returns the next item from the input.
 // Called by the parser, not in the lexing goroutine.
-func (l *Lexer) nextItem() TokenItem {
+func (l *lexer) nextItem() tokenItem {
 	item := <-l.items
-	l.lastPos = item.pos
+	//x l.lastPos = item.pos
 	return item
 }
 
 // drain drains the output so the lexing goroutine will exit.
 // Called by the parser, not in the lexing goroutine.
-func (l *Lexer) drain() {
+func (l *lexer) drain() {
 	for range l.items {
 	}
 }
-*/
 
 //emit pass a Token item back to client
-func (l *Lexer) emit(t TokenType) {
-	l.items <- TokenItem{t, l.input[l.start:l.pos], l.start, l.line}
+func (l *lexer) emit(t tokenType) {
+	l.items <- tokenItem{t, l.input[l.start:l.pos], l.start, l.line}
 
 	// Some items contain text internally. If so, count their newlines.
 	switch t {
-	case TokenText:
+	case tokenText:
 		l.line += strings.Count(l.input[l.start:l.pos], "\n")
 	}
 
@@ -62,14 +73,14 @@ func (l *Lexer) emit(t TokenType) {
 
 // run lexes the input by executing state functions until
 // the state is nil.
-func (l *Lexer) run() {
+func (l *lexer) run() {
 	for state := lexText; state != nil; {
 		state = state(l)
 	}
 	close(l.items) // No more tokens will be delivered.
 }
 
-func (l *Lexer) matchPrefix(searchPattern ...string) bool {
+func (l *lexer) matchPrefix(searchPattern ...string) bool {
 	for _, pattern := range searchPattern {
 		if strings.HasPrefix(l.input[l.pos:], pattern) {
 			return true
@@ -79,7 +90,7 @@ func (l *Lexer) matchPrefix(searchPattern ...string) bool {
 	return false
 }
 
-func (l *Lexer) matchSuffix(searchPattern ...string) bool {
+func (l *lexer) matchSuffix(searchPattern ...string) bool {
 	for _, pattern := range searchPattern {
 		if strings.HasSuffix(l.input[l.pos:], pattern) {
 			return true
@@ -91,7 +102,7 @@ func (l *Lexer) matchSuffix(searchPattern ...string) bool {
 
 // peek returns but does not consume
 // the next rune in the input.
-func (l *Lexer) peek() rune {
+func (l *lexer) peek() rune {
 	r := l.next()
 	l.backup()
 
@@ -99,7 +110,7 @@ func (l *Lexer) peek() rune {
 }
 
 // peekAhead read rune ahead current without alter state machine
-func (l *Lexer) peekAhead(step int) rune {
+func (l *lexer) peekAhead(step int) rune {
 	var r rune
 
 	tmpW := 0
@@ -118,7 +129,7 @@ func (l *Lexer) peekAhead(step int) rune {
 
 // backup steps back one rune.
 // Can be called only once per call of next.
-func (l *Lexer) backup() {
+func (l *lexer) backup() {
 	l.pos -= l.width
 
 	// Correct newline count.
@@ -128,7 +139,7 @@ func (l *Lexer) backup() {
 }
 
 // next returns the next rune in the input.
-func (l *Lexer) next() rune {
+func (l *lexer) next() rune {
 	if l.pos >= len(l.input) {
 		l.width = 0
 		return eof
@@ -145,12 +156,12 @@ func (l *Lexer) next() rune {
 }
 
 // ignore skips over the pending input before this point.
-func (l *Lexer) ignore() {
+func (l *lexer) ignore() {
 	l.start = l.pos
 }
 
 // move position forward
-func (l *Lexer) fastForward(step int) error {
+func (l *lexer) fastForward(step int) error {
 	backupStart := l.start
 	backupPos := l.pos
 	backupLine := l.line
@@ -176,7 +187,7 @@ func (l *Lexer) fastForward(step int) error {
 
 // accept consumes the next rune
 // if it's from the valid set.
-func (l *Lexer) accept(valid string) bool {
+func (l *lexer) accept(valid string) bool {
 	if strings.IndexRune(valid, l.next()) >= 0 {
 		return true
 	}
@@ -185,7 +196,7 @@ func (l *Lexer) accept(valid string) bool {
 }
 
 // acceptRun consumes a run of runes from the valid set.
-func (l *Lexer) acceptRun(valid string) {
+func (l *lexer) acceptRun(valid string) {
 	for strings.IndexRune(valid, l.next()) >= 0 {
 	}
 	l.backup()

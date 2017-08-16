@@ -7,7 +7,7 @@ import (
 
 func Test_lexText(t *testing.T) {
 	type args struct {
-		lex *Lexer
+		lex *lexer
 	}
 	tests := []struct {
 		name string
