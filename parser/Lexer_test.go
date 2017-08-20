@@ -21,30 +21,33 @@ func TestLexer_peekAhead(t *testing.T) {
 }
 
 func TestLexer_nextItem(t *testing.T) {
-	lexer := lex("testing", "SELECT * FROM invoice")
-
-	tSelect := lexer.nextItem()
-	t.Log(tSelect.String())
-	if tSelect.Type != tokenSelect {
-		t.Errorf("Expect tokenSelect but get: %s", tSelect.String())
+	items := []tokenType{
+		tokenSelect,
+		tokenAsterisk,
+		tokenColon,
+		tokenLiteral,
+		tokenColon,
+		tokenSum,
+		tokenLeftParen,
+		tokenLiteral,
+		tokenRightParen,
+		tokenFrom,
+		tokenLiteral,
 	}
 
-	tStar := lexer.nextItem()
-	t.Log(tStar.String())
-	if tStar.Type != tokenAsterisk {
-		t.Errorf("Expect tokenAsterisk but get: %s", tStar.String())
-	}
+	lexer := lex("testing", "SELECT *, name, SUM(qty) FROM invoice")
 
-	tFrom := lexer.nextItem()
-	t.Log(tFrom.String())
-	if tFrom.Type != tokenFrom {
-		t.Errorf("Expect tokenFrom but get: %s", tFrom.String())
-	}
+	var token tokenItem
+	for _, item := range items {
+		token = lexer.nextItem()
 
-	tLiteral := lexer.nextItem()
-	t.Log(tLiteral.String())
-	if tLiteral.Type != tokenLiteral {
-		t.Errorf("Expect tokenLiteral but get: %s", tLiteral.String())
+		if token.Type == tokenEOF {
+			break
+		} else if token.Type == tokenError {
+			t.Error(token.String())
+		} else if token.Type != item {
+			t.Errorf("Expect %s but get %s", item, token.String())
+		}
 	}
 
 	lexer.drain() //clear all scanning process and exit the goroutine

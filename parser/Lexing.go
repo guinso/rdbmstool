@@ -30,27 +30,43 @@ var kw = []tokenItem{
 	{tokenDrop, "drop", 0, 0},
 	{tokenAsc, "asc", 0, 0},
 	{tokenDesc, "desc", 0, 0},
+	{tokenAnd, "and", 0, 0},
+	{tokenOr, "or", 0, 0},
+	{tokenNot, "not", 0, 0},
+	{tokenDistinct, "distinct", 0, 0},
 }
 
-var symbols = []tokenItem{
-	{tokenEqual, "=", 0, 0},
-	{tokenNotEqual, "<>", 0, 0},
-	{tokenNotEqual, "!=", 0, 0},
-	{tokenGreater, ">", 0, 0},
-	{tokenGreaterEqual, ">=", 0, 0},
-	{tokenLesser, "<", 0, 0},
-	{tokenLesserEqual, "<=", 0, 0},
-	{tokenQuestionMark, "?", 0, 0},
-	{tokenWildcard, "%", 0, 0},
-	{tokenAsterisk, "*", 0, 0},
-	{tokenAdd, "+", 0, 0},
-	{tokenSubtract, "-", 0, 0},
-	{tokenDivide, "/", 0, 0},
-	{tokenLeftParen, "(", 0, 0},
-	{tokenRightParen, ")", 0, 0},
-	{tokenDot, ".", 0, 0},
-	{tokenColon, ",", 0, 0},
-	{tokenSemiColon, ";", 0, 0},
+var symbols = []struct {
+	Type  tokenType
+	Value string
+}{
+	{tokenEqual, "="},
+	{tokenNotEqual, "<>"},
+	{tokenNotEqual, "!="},
+	{tokenGreater, ">"},
+	{tokenGreaterEqual, ">="},
+	{tokenLesser, "<"},
+	{tokenLesserEqual, "<="},
+	{tokenQuestionMark, "?"},
+	{tokenWildcard, "%"},
+	{tokenAsterisk, "*"},
+	{tokenAdd, "+"},
+	{tokenSubtract, "-"},
+	{tokenDivide, "/"},
+	{tokenLeftParen, "("},
+	{tokenRightParen, ")"},
+	{tokenDot, "."},
+	{tokenColon, ","},
+	{tokenSemiColon, ";"},
+}
+
+var fns = []tokenItem{
+	{tokenSum, "sum", 0, 0},
+	{tokenMin, "min", 0, 0},
+	{tokenMax, "max", 0, 0},
+	{tokenAvg, "avg", 0, 0},
+	{tokenCount, "count", 0, 0},
+	{tokenGreatest, "greatest", 0, 0},
 }
 
 func isWhiteSpace(input rune) bool {
@@ -66,12 +82,13 @@ func isLiteralCharacter(input rune) bool {
 }
 
 func isNumeric(input rune) bool {
-	return input >= '0' && input <= '9'
+	return strings.IndexRune(
+		"0123456789", input) != -1
 }
 
 func isLetter(input rune) bool {
-	return (input >= 'a' && input <= 'z') ||
-		(input >= 'A' && input <= 'Z')
+	return strings.IndexRune(
+		"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ", input) != -1
 }
 
 func isKeywordMatch(lex *lexer, keyword string) bool {
@@ -82,6 +99,7 @@ func isKeywordMatch(lex *lexer, keyword string) bool {
 func lexText(lex *lexer) StateFn {
 	nr1 := lex.peekAhead(1)
 	nr2 := lex.peekAhead(2)
+	subString := lex.input[lex.start:]
 
 	//ignore white space
 	if isWhiteSpace(nr1) {
@@ -94,6 +112,14 @@ func lexText(lex *lexer) StateFn {
 	for _, k := range kw {
 		if isKeywordMatch(lex, k.Value) {
 			return lexKeyword(lex, k.Value, k.Type)
+		}
+	}
+
+	//looking for function if match
+	for _, fn := range fns {
+		if strings.HasPrefix(subString, strings.ToUpper(fn.Value)+"(") ||
+			strings.HasPrefix(subString, strings.ToLower(fn.Value)+"(") {
+			return lexFunction(lex, fn.Value, fn.Type)
 		}
 	}
 
@@ -126,13 +152,13 @@ func lexText(lex *lexer) StateFn {
 	}
 
 	//looking for literal (literal can start with backquote or without backquote)
-	if nr1 == '`' || isLetter(nr2) {
+	if (nr1 == '`' && isLetter(nr2)) || isLetter(nr1) {
 		return lexLiteral(lex)
 	}
 
 	//looking for symbols if match
 	for _, s := range symbols {
-		if isKeywordMatch(lex, s.Value) {
+		if strings.HasPrefix(subString, s.Value) {
 			return lexKeyword(lex, s.Value, s.Type)
 		}
 	}
@@ -155,6 +181,14 @@ func lexText(lex *lexer) StateFn {
 
 //lexKeyword
 func lexKeyword(lex *lexer, keyword string, tokenTypee tokenType) StateFn {
+	lex.fastForward(len(keyword))
+	lex.emit(tokenTypee)
+
+	return lexText
+}
+
+//lexFunction
+func lexFunction(lex *lexer, keyword string, tokenTypee tokenType) StateFn {
 	lex.fastForward(len(keyword))
 	lex.emit(tokenTypee)
 
@@ -303,9 +337,7 @@ func lexQuoteString(lex *lexer) StateFn {
 func lexLiteral(lex *lexer) StateFn {
 	r := lex.next()
 
-	hasBackQuote := r == '`'
-
-	if hasBackQuote {
+	if r == '`' { //has backquote character
 		for { //loop til reach backquote
 			r = lex.next()
 			if r == '`' {
@@ -321,6 +353,7 @@ func lexLiteral(lex *lexer) StateFn {
 		for { //loop til reach white space, EOF, or non-alphaNumeric
 			r = lex.next()
 			if !isLiteralCharacter(r) {
+				lex.backup() //backward one rune since latest run is not valid literal
 				lex.emit(tokenLiteral)
 				return lexText
 			}
