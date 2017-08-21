@@ -23,8 +23,12 @@ func TestLexer_peekAhead(t *testing.T) {
 func TestLexer_nextItem(t *testing.T) {
 	items := []tokenType{
 		tokenSelect,
+		tokenLiteral,
+		tokenDot,
 		tokenAsterisk,
 		tokenColon,
+		tokenLiteral,
+		tokenAs,
 		tokenLiteral,
 		tokenColon,
 		tokenSum,
@@ -35,7 +39,7 @@ func TestLexer_nextItem(t *testing.T) {
 		tokenLiteral,
 	}
 
-	lexer := lex("testing", "SELECT *, name, SUM(qty) FROM invoice")
+	lexer := lex("testing", "SELECT a.*, name AS koko, SUM(qty) FROM invoice")
 
 	var token tokenItem
 	for _, item := range items {

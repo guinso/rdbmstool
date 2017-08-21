@@ -68,6 +68,7 @@ const (
 	tokenOr                     // OR keyword
 	tokenNot                    // not keyword
 	tokenDistinct               // distinct keyword
+	tokenAs                     // AS keyword
 	tokenMin                    // MIN()
 	tokenMax                    //MAX()
 	tokenGreatest               //GREATEST()
@@ -98,6 +99,8 @@ func (item tokenType) String() string {
 		return "add"
 	case tokenAnd:
 		return "and"
+	case tokenAs:
+		return "as"
 	case tokenAsc:
 		return "asc"
 	case tokenAsterisk:

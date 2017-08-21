@@ -3,42 +3,6 @@ package parser
 //Refered from https://github.com/golang/go/blob/master/src/text/template/parse/parse.go and
 //             https://github.com/golang/go/blob/master/src/text/template/parse/node.go
 
-/****************************** Tree *********************************/
-
-// Tree is the representation of a single parsed template.
-type Tree struct {
-	Name      string // name of the template represented by the tree.
-	ParseName string // name of the top-level template during parsing, for error messages.
-	Root      []Node // top-level root of the tree.
-	text      string // text parsed to create the template (or its parent)
-	// Parsing only; cleared after parse.
-	funcs     []map[string]interface{}
-	lex       *lexer
-	token     [3]tokenItem // three-token lookahead for parser.
-	peekCount int
-	vars      []string // variables defined at the moment.
-	treeSet   map[string]*Tree
-}
-
-// Copy returns a copy of the Tree. Any parsing state is discarded.
-func (t *Tree) Copy() *Tree {
-	if t == nil {
-		return nil
-	}
-
-	root := []Node{}
-	for i := 0; i < len(t.Root); i++ {
-		root = append(root, t.Root[i].Copy())
-	}
-
-	return &Tree{
-		Name:      t.Name,
-		ParseName: t.ParseName,
-		Root:      root,
-		text:      t.text,
-	}
-}
-
 /***************************** Node ***************************************/
 
 // A Node is an element in the parse tree. The interface is trivial.
@@ -72,4 +36,163 @@ func (p Pos) Position() Pos {
 // for embedding in a Node. Embedded in all non-trivial Nodes.
 func (t NodeType) Type() NodeType {
 	return t
+}
+
+/****************************** Tree *********************************/
+
+// Tree is the representation of a single parsed template.
+// Tree structure is AST (abstract syntax tree)
+// TIPS: please refer Dijkstra's shunting-yard algorithm => operator-precedence parser
+//       pratt parser
+// Reference:
+// https://rosettacode.org/wiki/Parsing/Shunting-yard_algorithm
+// https://www.engr.mun.ca/~theo/Misc/exp_parsing.htm
+// http://eli.thegreenplace.net/2012/08/02/parsing-expressions-by-precedence-climbing
+//
+// <Operator predecent>
+// .
+// DISTINCT AS NOT
+// / MUL
+// + -
+// = LIKE <> > >= < <=
+// ,
+// MIN() MAX() SUM() AVG() GREATEST()
+// AND OR
+// JOIN OFFSET
+// SELECT FROM WHERE HAVING GROUP-BY LIMIT
+// UNION
+// )
+// (
+//
+//
+/*--------------------  example;   ---------------
+
+  SELECT (A + B), t1.name FROM t1
+
+                      query SQL
+				/                   \
+			SELECT                 FROM
+			/                        |
+			,                        t1
+    /	          \
+   ()              .
+    |           /    \
+	+          t1   name
+ /    \
+A      B
+
+----------------------------------------------------------*/
+type Tree struct {
+	Name      string // name of the template represented by the tree.
+	ParseName string // name of the top-level template during parsing, for error messages.
+	Root      []Node // top-level root of the tree.
+	text      string // text parsed to create the template (or its parent)
+	// Parsing only; cleared after parse.
+	funcs     []map[string]interface{}
+	lex       *lexer
+	token     [3]tokenItem // three-token lookahead for parser.
+	peekCount int
+	vars      []string // variables defined at the moment.
+	treeSet   map[string]*Tree
+}
+
+// Copy returns a copy of the Tree. Any parsing state is discarded.
+func (t *Tree) Copy() *Tree {
+	if t == nil {
+		return nil
+	}
+
+	root := []Node{}
+	for i := 0; i < len(t.Root); i++ {
+		root = append(root, t.Root[i].Copy())
+	}
+
+	return &Tree{
+		Name:      t.Name,
+		ParseName: t.ParseName,
+		Root:      root,
+		text:      t.text,
+	}
+}
+
+//Parse parsing input text into abstract structure tree (AST)
+func (t *Tree) Parse(text string) (*Tree, error) {
+	lexer := lex(t.Name, text)
+	t.startParse(lexer)
+	return t, nil
+}
+
+func (t *Tree) startParse(lex *lexer) {
+	//TODO; iterate token(s) and build AST
+	for token := lex.nextItem(); token.Type != tokenEOF; {
+		switch token.Type {
+		case tokenSelect:
+			break
+		case tokenFrom:
+			break
+		case tokenJoin:
+			break
+		case tokenWhere:
+			break
+		case tokenHaving:
+			break
+		case tokenGroupBy:
+			break
+		case tokenLimit:
+			break
+		case tokenUnion:
+			break
+		/*case tokenCreate:
+			break
+		case tokenDrop:
+			break
+		*/
+		default:
+			//TODO: handler grammer error
+			break
+		}
+	}
+}
+
+func (t *Tree) parseExpression() {
+	//accept:
+	//1. literal
+	//2. number
+	//3. string
+	//4. logical operator
+	//5. function
+
+	//push parentesis into stack
+}
+
+func (t *Tree) parseParentesis() {
+	//consider complete if well received
+	//1. '(',
+	//2. expression,
+	//3. ')'
+
+	//otherwise throw error
+}
+
+func (t *Tree) parseLogicalExpresion() {
+	//TODO: handle various simplest logical expression
+	//1. a operator b
+	//2. operator a
+}
+
+func (t *Tree) parseField() {
+
+}
+
+func (t *Tree) parseFunction() {
+	//TODO: expand this function to verify various functions
+	//e.g. MAX(), MIN(), COUNT(), AVG(), etc.
+}
+
+func (t *Tree) parseJoin() {
+	//TODO: handle all types of JOINs
+}
+
+func (t *Tree) parseSelect() {
+
 }

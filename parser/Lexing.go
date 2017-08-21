@@ -13,6 +13,7 @@ type StateFn func(item *lexer) StateFn
 const eof = 0
 
 var kw = []tokenItem{
+	{tokenAs, "as", 0, 0},
 	{tokenSelect, "select", 0, 0},
 	{tokenFrom, "from", 0, 0},
 	{tokenJoin, "join", 0, 0},
