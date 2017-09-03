@@ -151,13 +151,13 @@ func generateIndexSQL(tableDef *TableDefinition) (string, error) {
 			for colIndex, colName := range ik.ColumnNames {
 				if colIndex == 0 {
 					uName = colName
-					uCols = colName
+					uCols = "`" + colName + "`"
 				} else {
 					uName = uName + "_" + colName
-					uCols = uCols + "," + colName
+					uCols = uCols + ",`" + colName + "`"
 				}
 			}
-			tmpSQL = fmt.Sprintf("KEY `%s` (`%s`)", uName, uCols)
+			tmpSQL = fmt.Sprintf("KEY `%s` (%s)", uName, uCols)
 
 			if index == 0 {
 				sql = tmpSQL

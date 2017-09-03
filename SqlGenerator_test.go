@@ -47,6 +47,9 @@ func TestGenerateDataTableSQL(t *testing.T) {
 	def.Indices = append(def.Indices, IndexKeyDefinition{
 		ColumnNames: []string{"role_id"},
 	})
+	def.Indices = append(def.Indices, IndexKeyDefinition{
+		ColumnNames: []string{"account_id", "role_id"},
+	})
 
 	def.ForiegnKeys = append(def.ForiegnKeys, ForeignKeyDefinition{
 		ReferenceTableName: "account",
@@ -83,6 +86,7 @@ func TestGenerateDataTableSQL(t *testing.T) {
 			"UNIQUE KEY `account_id_role_id` (`account_id`,`role_id`),\n" +
 			"KEY `account_id` (`account_id`),\n" +
 			"KEY `role_id` (`role_id`),\n" +
+			"KEY `account_id_role_id` (`account_id`,`role_id`),\n" +
 			"CONSTRAINT `account_role_ibfk_1` FOREIGN KEY (`account_id`) REFERENCES `account` (`id`),\n" +
 			"CONSTRAINT `account_role_ibfk_2` FOREIGN KEY (`role_id`) REFERENCES `role` (`id`)\n" +
 			") ENGINE=innodb DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;"
