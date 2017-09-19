@@ -11,14 +11,14 @@ type ConditionOperator uint8
 //Condition operator constants
 const (
 	EQUAL              ConditionOperator = iota
-	NOT_EQUAL                            //ConditionOperator = iota + 1
-	GREATER_THAN                         //ConditionOperator = iota + 1
-	LESS_THAN                            //ConditionOperator = iota + 1
-	GREATER_THAN_EQUAL                   //ConditionOperator = iota + 1
-	LESS_THAN_EQUAL                      //ConditionOperator = iota + 1
-	BETWEEN                              //ConditionOperator = iota + 1
-	LIKE                                 //ConditionOperator = iota + 1
-	IN                                   //ConditionOperator = iota + 1
+	NOT_EQUAL          ConditionOperator = iota + 1
+	GREATER_THAN       ConditionOperator = iota + 1
+	LESS_THAN          ConditionOperator = iota + 1
+	GREATER_THAN_EQUAL ConditionOperator = iota + 1
+	LESS_THAN_EQUAL    ConditionOperator = iota + 1
+	BETWEEN            ConditionOperator = iota + 1
+	LIKE               ConditionOperator = iota + 1
+	IN                 ConditionOperator = iota + 1
 )
 
 //ConditionGroupOperator logic operator for WHERE and JOIN clause: AND & OR
@@ -55,6 +55,8 @@ func (cond *ConditionDefinition) SQL() (string, error) {
 		return cond.LeftExpression + " BETWEEN " + cond.RightExpression, nil
 	case IN:
 		return cond.LeftExpression + " IN " + cond.RightExpression, nil
+	case LIKE:
+		return cond.LeftExpression + " LIKE " + cond.RightExpression, nil
 	default:
 		return "", fmt.Errorf("Unsupported condition operator detected: %d, left expr '%s', right expr '%s'",
 			cond.Operator, cond.LeftExpression, cond.RightExpression)
