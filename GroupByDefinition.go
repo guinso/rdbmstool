@@ -1,4 +1,4 @@
-package query
+package rdbmstool
 
 //GroupByDefinition SQL Group By statement definition
 type GroupByDefinition struct {

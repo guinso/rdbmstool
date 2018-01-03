@@ -1,15 +1,15 @@
-package query
+package rdbmstool
 
 //SelectSQLBuilder SQl Select statement builder interface
-type SelectSQLBuilder struct {
+type QueryBuilder struct {
 	selectDefinition *SelectDefinition
 }
 
 //NewSelectSQLBuilder create new Select SQL string builder
-func NewSelectSQLBuilder() *SelectSQLBuilder {
-	return &SelectSQLBuilder{
+func NewQueryBuilder() *QueryBuilder {
+	return &QueryBuilder{
 		selectDefinition: &SelectDefinition{
-			Select:  []ColumnDefinition{},
+			Select:  []SelectColumnDefinition{},
 			From:    nil,
 			Join:    []JoinDefinition{},
 			Where:   nil,
@@ -21,29 +21,29 @@ func NewSelectSQLBuilder() *SelectSQLBuilder {
 }
 
 //Select add select column
-func (builder *SelectSQLBuilder) Select(expression string, alias string) *SelectSQLBuilder {
+func (builder *QueryBuilder) Select(expression string, alias string) *QueryBuilder {
 	builder.selectDefinition.Select = append(builder.selectDefinition.Select,
-		ColumnDefinition{
+		SelectColumnDefinition{
 			Expression: expression,
 			Alias:      alias})
 	return builder
 }
 
 //From set from statement
-func (builder *SelectSQLBuilder) From(expression string, alias string) *SelectSQLBuilder {
+func (builder *QueryBuilder) From(expression string, alias string) *QueryBuilder {
 	builder.selectDefinition.From = NewFromDefinition(expression, alias)
 	return builder
 }
 
 //Join  add join statement
-func (builder *SelectSQLBuilder) Join(join *JoinDefinition) *SelectSQLBuilder {
+func (builder *QueryBuilder) Join(join *JoinDefinition) *QueryBuilder {
 	builder.selectDefinition.Join = append(builder.selectDefinition.Join, *join)
 	return builder
 }
 
 //JoinSimple add simple Join statement
-func (builder *SelectSQLBuilder) JoinSimple(source string, alias string, category JoinType,
-	leftCond string, rightCond string, condOpr ConditionOperator) *SelectSQLBuilder {
+func (builder *QueryBuilder) JoinSimple(source string, alias string, category JoinType,
+	leftCond string, rightCond string, condOpr ConditionOperator) *QueryBuilder {
 
 	builder.selectDefinition.Join = append(
 		builder.selectDefinition.Join,
@@ -54,15 +54,15 @@ func (builder *SelectSQLBuilder) JoinSimple(source string, alias string, categor
 }
 
 //Where set Where statement
-func (builder *SelectSQLBuilder) Where(where *ConditionGroupDefinition) *SelectSQLBuilder {
+func (builder *QueryBuilder) Where(where *ConditionGroupDefinition) *QueryBuilder {
 	builder.selectDefinition.Where = where
 	return builder
 }
 
 //WhereAnd append where statement with AND operator
 //if where statement is NULL, it will init as first condition and omit AND
-func (builder *SelectSQLBuilder) WhereAnd(
-	operator ConditionOperator, leftExpression string, rightExpression string) *SelectSQLBuilder {
+func (builder *QueryBuilder) WhereAnd(
+	operator ConditionOperator, leftExpression string, rightExpression string) *QueryBuilder {
 
 	if builder.selectDefinition.Where == nil {
 		builder.selectDefinition.Where = NewConditionGroupDefinition(operator, leftExpression, rightExpression)
@@ -75,8 +75,8 @@ func (builder *SelectSQLBuilder) WhereAnd(
 
 //WhereOR append where statement with OR operator
 //if where statement is NULL, it will init as first condition and omit OR
-func (builder *SelectSQLBuilder) WhereOR(
-	operator ConditionOperator, leftExpression string, rightExpression string) *SelectSQLBuilder {
+func (builder *QueryBuilder) WhereOR(
+	operator ConditionOperator, leftExpression string, rightExpression string) *QueryBuilder {
 
 	if builder.selectDefinition.Where == nil {
 		builder.selectDefinition.Where = NewConditionGroupDefinition(operator, leftExpression, rightExpression)
@@ -90,8 +90,8 @@ func (builder *SelectSQLBuilder) WhereOR(
 //WhereGroup append Where statement with group condition
 //operator: group condition, example OR, AND
 //condition: nested condition, example (a =3 AND (b > 4 OR d <> false))
-func (builder *SelectSQLBuilder) WhereGroup(
-	operator ConditionGroupOperator, condition *ConditionGroupDefinition) *SelectSQLBuilder {
+func (builder *QueryBuilder) WhereGroup(
+	operator ConditionGroupOperator, condition *ConditionGroupDefinition) *QueryBuilder {
 
 	if builder.selectDefinition.Where == nil {
 		builder.selectDefinition.Where = condition
@@ -103,7 +103,7 @@ func (builder *SelectSQLBuilder) WhereGroup(
 }
 
 //GroupBy add group by statment
-func (builder *SelectSQLBuilder) GroupBy(expression string, isAscending bool) *SelectSQLBuilder {
+func (builder *QueryBuilder) GroupBy(expression string, isAscending bool) *QueryBuilder {
 	builder.selectDefinition.GroupBy = append(builder.selectDefinition.GroupBy, GroupByDefinition{
 		Expression: expression,
 		IsAcending: isAscending})
@@ -112,13 +112,13 @@ func (builder *SelectSQLBuilder) GroupBy(expression string, isAscending bool) *S
 }
 
 //Having set having statement
-func (builder *SelectSQLBuilder) Having(having *ConditionGroupDefinition) *SelectSQLBuilder {
+func (builder *QueryBuilder) Having(having *ConditionGroupDefinition) *QueryBuilder {
 	builder.selectDefinition.Having = having
 	return builder
 }
 
 //OrderBy add order by statement
-func (builder *SelectSQLBuilder) OrderBy(expression string, isAscending bool) *SelectSQLBuilder {
+func (builder *QueryBuilder) OrderBy(expression string, isAscending bool) *QueryBuilder {
 	builder.selectDefinition.OrderBy = append(builder.selectDefinition.OrderBy, OrderByDefinition{
 		Expression:  expression,
 		IsAscending: isAscending})
@@ -127,7 +127,7 @@ func (builder *SelectSQLBuilder) OrderBy(expression string, isAscending bool) *S
 }
 
 //Limit set limit statement
-func (builder *SelectSQLBuilder) Limit(rowCount int, offset int) *SelectSQLBuilder {
+func (builder *QueryBuilder) Limit(rowCount int, offset int) *QueryBuilder {
 	builder.selectDefinition.Limit = &LimitDefinition{
 		RowCount: rowCount,
 		Offset:   offset}
@@ -136,12 +136,12 @@ func (builder *SelectSQLBuilder) Limit(rowCount int, offset int) *SelectSQLBuild
 }
 
 //Union add union statement
-func (builder *SelectSQLBuilder) Union(union *SelectDefinition) *SelectSQLBuilder {
+func (builder *QueryBuilder) Union(union *SelectDefinition) *QueryBuilder {
 	builder.selectDefinition.Union = append(builder.selectDefinition.Union, *union)
 	return builder
 }
 
 //SQL generate SQL string
-func (builder *SelectSQLBuilder) SQL() (string, error) {
+func (builder *QueryBuilder) SQL() (string, error) {
 	return builder.selectDefinition.SQL()
 }

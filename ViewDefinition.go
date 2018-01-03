@@ -1,12 +1,11 @@
-package computed
+package rdbmstool
 
-import "github.com/guinso/rdbmstool/query"
 import "fmt"
 
 //ViewDefinition Data Views definition
 type ViewDefinition struct {
 	Name  string
-	Query *query.SelectSQLBuilder
+	Query *QueryBuilder
 }
 
 //SQL generate View SQL string

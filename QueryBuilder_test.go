@@ -1,10 +1,10 @@
-package query
+package rdbmstool
 
 import "testing"
 import "strings"
 
 func TestSelectSQLBuilder(t *testing.T) {
-	builder := NewSelectSQLBuilder()
+	builder := NewQueryBuilder()
 
 	builder.Select("a.name", "").Select("a.years_old", "age").
 		From("student", "a").

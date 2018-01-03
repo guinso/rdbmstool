@@ -6,24 +6,107 @@ import (
 	"strings"
 )
 
+// ColumnDataType is enum for data column's data type
+type ColumnDataType uint8
+
+// Data table column's data type definition
 const (
-	collate = "utf8mb4_unicode_ci"
+	CHAR     ColumnDataType = iota + 1
+	INTEGER  ColumnDataType = iota + 1
+	DECIMAL  ColumnDataType = iota + 1
+	FLOAT    ColumnDataType = iota + 1
+	TEXT     ColumnDataType = iota + 1
+	DATE     ColumnDataType = iota + 1
+	DATETIME ColumnDataType = iota + 1
+	BOOLEAN  ColumnDataType = iota + 1
+	VARCHAR  ColumnDataType = iota + 1
+	DOUBLE   ColumnDataType = iota + 1
 )
 
-//SQLGenerator generate SQL statement interface
-type SQLGenerator interface {
-	SQL() (string, error)
-	Validate() error
+//String return database's data column type in string format
+func (colType ColumnDataType) String() string {
+	if colType == CHAR {
+		return "CHAR"
+	} else if colType == INTEGER {
+		return "INTEGER"
+	} else if colType == DECIMAL {
+		return "DECIMAL"
+	} else if colType == FLOAT {
+		return "FLOAT"
+	} else if colType == TEXT {
+		return "TEXT"
+	} else if colType == DATE {
+		return "DATE"
+	} else if colType == DATETIME {
+		return "DATETIME"
+	} else if colType == BOOLEAN {
+		return "BOOLEAN"
+	} else if colType == VARCHAR {
+		return "VARCHAR"
+	} else if colType == DOUBLE {
+		return "DOUBLE"
+	} else {
+		return "unknown"
+	}
 }
 
+// TableDefinition is information to create a data table
+type TableDefinition struct {
+	Name        string
+	Columns     []ColumnDefinition
+	PrimaryKey  []string //PK can form by more than one column
+	ForiegnKeys []ForeignKeyDefinition
+	UniqueKeys  []UniqueKeyDefinition
+	Indices     []IndexKeyDefinition
+	//do I need to include encoding as well?
+}
+
+// ColumnDefinition is information to defined a data table column
+type ColumnDefinition struct {
+	Name             string
+	DataType         ColumnDataType
+	Length           int
+	IsNullable       bool
+	DecimalPrecision int
+}
+
+// ForeignKeyDefinition is information to create a RDBMS FK
+type ForeignKeyDefinition struct {
+	Name               string //foreign key name display on database (optional)
+	ReferenceTableName string
+	//ColumnName         string
+	//ReferenceSchemaName string
+	//ReferenceColumnName string
+	Columns []FKColumnDefinition
+}
+
+//FKColumnDefinition information for FK column reference
+type FKColumnDefinition struct {
+	ColumnName    string
+	RefColumnName string
+}
+
+// UniqueKeyDefinition is information to create an unique key
+//NOTE: a single unique key can made up from multiple columns
+type UniqueKeyDefinition struct {
+	ColumnNames []string
+}
+
+//IndexKeyDefinition information to hold a single index key
+//NOTE: a single index key can made up from multiple columns
+type IndexKeyDefinition struct {
+	ColumnNames []string
+}
+
+
 //GenerateTableSQL to generate "create table" SQL statement
-func GenerateTableSQL(tableDef *TableDefinition) (string, error) {
+func (tableDef *TableDefinition) GenerateTableSQL() (string, error) {
 	if tableDef == nil {
 		return "", errors.New("input parameter is null")
 	}
 
 	//validate tableDef integrity
-	tableDefValidErr := ValidateTableDefinition(tableDef)
+	tableDefValidErr := tableDef.ValidateTableDefinition()
 	if tableDefValidErr != nil {
 		return "", tableDefValidErr
 	}
@@ -35,7 +118,7 @@ func GenerateTableSQL(tableDef *TableDefinition) (string, error) {
 
 	//generate column SQL statement
 	for index, col := range tableDef.Columns {
-		tmpSQL, tmpErr = generateColumnSQL(&col)
+		tmpSQL, tmpErr = tableDef.generateColumnSQL(&col)
 
 		if tmpErr != nil {
 			return "", tmpErr
@@ -49,7 +132,7 @@ func GenerateTableSQL(tableDef *TableDefinition) (string, error) {
 	}
 
 	//generate PK SQL statement
-	pkSQL, pkErr := generatePrimaryKeySQL(tableDef)
+	pkSQL, pkErr := tableDef.generatePrimaryKeySQL()
 	if pkErr != nil {
 		return "", pkErr
 	}
@@ -59,7 +142,7 @@ func GenerateTableSQL(tableDef *TableDefinition) (string, error) {
 	}
 
 	//generate Unique key SQL statement
-	ukSQL, ukErr := generateUniqueKeySQL(tableDef)
+	ukSQL, ukErr := tableDef.generateUniqueKeySQL()
 	if ukErr != nil {
 		return "", ukErr
 	}
@@ -69,7 +152,7 @@ func GenerateTableSQL(tableDef *TableDefinition) (string, error) {
 	}
 
 	//generate index key SQL statement
-	ikSQL, ikErr := generateIndexSQL(tableDef)
+	ikSQL, ikErr := tableDef.generateIndexSQL()
 	if ikErr != nil {
 		return "", ikErr
 	}
@@ -79,7 +162,7 @@ func GenerateTableSQL(tableDef *TableDefinition) (string, error) {
 	}
 
 	//generate FK SQL statement
-	fkSQL, fkErr := generateForeignKeySQL(tableDef)
+	fkSQL, fkErr := tableDef.generateForeignKeySQL()
 	if fkErr != nil {
 		return "", fkErr
 	}
@@ -95,38 +178,38 @@ func GenerateTableSQL(tableDef *TableDefinition) (string, error) {
 	return sqlStatement, nil
 }
 
-func generateColumnSQL(colDef *ColumnDefinition) (string, error) {
+func (tableDef *TableDefinition) generateColumnSQL(colDef *ColumnDefinition) (string, error) {
 	switch colDef.DataType {
 	case CHAR:
 		return fmt.Sprintf("`%s` char(%d) COLLATE %s %s",
-			colDef.Name, colDef.Length, collate, generateIsNullSQL(colDef.IsNullable)), nil
+			colDef.Name, colDef.Length, collate, tableDef.generateIsNullSQL(colDef.IsNullable)), nil
 	case INTEGER:
 		return fmt.Sprintf("`%s` int(%d) %s",
-			colDef.Name, colDef.Length, generateIsNullSQL(colDef.IsNullable)), nil
+			colDef.Name, colDef.Length, tableDef.generateIsNullSQL(colDef.IsNullable)), nil
 	case DECIMAL:
 		return fmt.Sprintf("`%s` decimal(%d,%d) %s",
-			colDef.Name, colDef.Length, colDef.DecimalPrecision, generateIsNullSQL(colDef.IsNullable)), nil
+			colDef.Name, colDef.Length, colDef.DecimalPrecision, tableDef.generateIsNullSQL(colDef.IsNullable)), nil
 	case FLOAT:
 		return fmt.Sprintf("`%s` float %s",
-			colDef.Name, generateIsNullSQL(colDef.IsNullable)), nil
+			colDef.Name, tableDef.generateIsNullSQL(colDef.IsNullable)), nil
 	case TEXT:
 		return fmt.Sprintf("`%s` text COLLATE %s %s",
-			colDef.Name, collate, generateIsNullSQL(colDef.IsNullable)), nil
+			colDef.Name, collate, tableDef.generateIsNullSQL(colDef.IsNullable)), nil
 	case DATE:
 		return fmt.Sprintf("`%s` date %s",
-			colDef.Name, generateIsNullSQL(colDef.IsNullable)), nil
+			colDef.Name, tableDef.generateIsNullSQL(colDef.IsNullable)), nil
 	case DATETIME:
 		return fmt.Sprintf("`%s` datetime %s",
-			colDef.Name, generateIsNullSQL(colDef.IsNullable)), nil
+			colDef.Name, tableDef.generateIsNullSQL(colDef.IsNullable)), nil
 	case BOOLEAN:
-		return fmt.Sprintf("`%s` tinyint(1) %s", colDef.Name, generateIsNullSQL(colDef.IsNullable)), nil
+		return fmt.Sprintf("`%s` tinyint(1) %s", colDef.Name, tableDef.generateIsNullSQL(colDef.IsNullable)), nil
 	default:
 		return "", fmt.Errorf(
 			"unknown data column (%s) type: %d", colDef.Name, colDef.DataType)
 	}
 }
 
-func generateIsNullSQL(isNullable bool) string {
+func (def *TableDefinition) generateIsNullSQL(isNullable bool) string {
 	if isNullable {
 		return "NULL"
 	}
@@ -135,7 +218,7 @@ func generateIsNullSQL(isNullable bool) string {
 
 }
 
-func generateIndexSQL(tableDef *TableDefinition) (string, error) {
+func (tableDef *TableDefinition) generateIndexSQL() (string, error) {
 	if tableDef == nil || tableDef.Indices == nil {
 		return "", errors.New("Index SQL generator: Cannot pass null parameter")
 	}
@@ -172,7 +255,7 @@ func generateIndexSQL(tableDef *TableDefinition) (string, error) {
 	return sql, nil
 }
 
-func generateUniqueKeySQL(tableDef *TableDefinition) (string, error) {
+func (tableDef *TableDefinition) generateUniqueKeySQL() (string, error) {
 	if tableDef == nil || tableDef.UniqueKeys == nil {
 		return "", errors.New("Unique Key SQL generator: Cannot pass null parameter")
 	}
@@ -209,7 +292,7 @@ func generateUniqueKeySQL(tableDef *TableDefinition) (string, error) {
 	return sql, nil
 }
 
-func generateForeignKeySQL(tableDef *TableDefinition) (string, error) {
+func (tableDef *TableDefinition) generateForeignKeySQL() (string, error) {
 	if tableDef == nil || tableDef.ForiegnKeys == nil {
 		return "", errors.New("FK SQL generator: Cannot pass null parameter")
 	}
@@ -253,7 +336,7 @@ func generateForeignKeySQL(tableDef *TableDefinition) (string, error) {
 	return sql, nil
 }
 
-func generatePrimaryKeySQL(tableDef *TableDefinition) (string, error) {
+func (tableDef *TableDefinition) generatePrimaryKeySQL() (string, error) {
 	if tableDef == nil || tableDef.PrimaryKey == nil {
 		return "", errors.New("PK SQL generator: Cannot pass null parameter")
 	}
@@ -277,12 +360,12 @@ func generatePrimaryKeySQL(tableDef *TableDefinition) (string, error) {
 	return sql, nil
 }
 
-func ValidateTableDefinition(tableDef *TableDefinition) error {
+func (tableDef *TableDefinition) ValidateTableDefinition() error {
 	//TODO: implement validation
 	return nil
 }
 
-func ValidateColumnDefinition(colDef *ColumnDefinition) error {
+func (tableDef *TableDefinition) ValidateColumnDefinition() error {
 	//TODO: implement validation
 	return nil
 }

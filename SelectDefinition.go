@@ -1,4 +1,4 @@
-package query
+package rdbmstool
 
 import (
 	"errors"
@@ -6,14 +6,14 @@ import (
 	"strings"
 )
 
-//ColumnDefinition SQL select column definition
-type ColumnDefinition struct {
+//SelectColumnDefinition SQL select column definition
+type SelectColumnDefinition struct {
 	Expression string
 	Alias      string
 }
 
 //SQL generate SQL string for select column statement
-func (column *ColumnDefinition) SQL() (string, error) {
+func (column *SelectColumnDefinition) SQL() (string, error) {
 	if strings.Compare(column.Alias, "") == 0 {
 		return column.Expression, nil
 	}
@@ -23,7 +23,7 @@ func (column *ColumnDefinition) SQL() (string, error) {
 
 //SelectDefinition SQL query definition
 type SelectDefinition struct {
-	Select  []ColumnDefinition
+	Select  []SelectColumnDefinition
 	From    *FromDefinition
 	Join    []JoinDefinition
 	Where   *ConditionGroupDefinition

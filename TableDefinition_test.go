@@ -70,7 +70,7 @@ func TestGenerateDataTableSQL(t *testing.T) {
 		},
 	})
 
-	sql, err := GenerateTableSQL(&def)
+	sql, err := def.GenerateTableSQL()
 
 	if err != nil {
 		t.Errorf("Unable to generate SQL: " + err.Error())

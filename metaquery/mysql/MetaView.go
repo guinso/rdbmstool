@@ -4,7 +4,6 @@ import (
 	"errors"
 
 	"github.com/guinso/rdbmstool"
-	"github.com/guinso/rdbmstool/computed"
 )
 
 //GetViewNames show all database's view table
@@ -34,7 +33,7 @@ func (meta *MetaQuery) GetViewNames(db rdbmstool.DbHandlerProxy, dbName string, 
 //dbName: database name
 //viewName: view name (example 'tax_invoice')
 func (meta *MetaQuery) GetViewDefinition(db rdbmstool.DbHandlerProxy, dbName string, viewName string) (
-	*computed.ViewDefinition, error) {
+	*rdbmstool.ViewDefinition, error) {
 	//TODO: implement SQL parser... -_-|||
 
 	return nil, errors.New("Not implemented yet")

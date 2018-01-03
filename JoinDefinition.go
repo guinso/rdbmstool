@@ -1,4 +1,4 @@
-package query
+package rdbmstool
 
 import (
 	"errors"
@@ -40,6 +40,11 @@ func (join *JoinDefinition) SQL() (string, error) {
 	case OUTER_JOIN:
 		result = result + "OUTER JOIN"
 		break
+	case LEFT_JOIN:
+		result = result + "LEFT JOIN"
+		break
+	case RIGHT_JOIN:
+
 	default:
 		return "", fmt.Errorf("Unsupported JOIN type found: %d", join.Type)
 	}

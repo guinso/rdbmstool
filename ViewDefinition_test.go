@@ -1,25 +1,23 @@
-package computed
+package rdbmstool
 
 import (
 	"strings"
 	"testing"
-
-	"github.com/guinso/rdbmstool/query"
 )
 
 func TestViewDefinition_SQL(t *testing.T) {
-	builder := query.NewSelectSQLBuilder().
+	builder := NewQueryBuilder().
 		Select("a.name", "").Select("a.years_old", "age").
 		From("student", "a").
-		JoinSimple("school", "b", query.INNER_JOIN, "a.school", "b.name", query.EQUAL).
-		JoinSimple("family", "c", query.OUTER_JOIN, "a.surname", "c.surname", query.EQUAL).
-		WhereAnd(query.EQUAL, "a.l", "4").
-		WhereOR(query.GREATER_THAN, "a.age", "4").
-		WhereGroup(query.AND, query.NewConditionGroupDefinition(query.EQUAL, "b.name", "'john'").
-			And(query.NOT_EQUAL, "b.k", "8")).
+		JoinSimple("school", "b", INNER_JOIN, "a.school", "b.name", EQUAL).
+		JoinSimple("family", "c", OUTER_JOIN, "a.surname", "c.surname", EQUAL).
+		WhereAnd(EQUAL, "a.l", "4").
+		WhereOR(GREATER_THAN, "a.age", "4").
+		WhereGroup(AND, NewConditionGroupDefinition(EQUAL, "b.name", "'john'").
+			And(NOT_EQUAL, "b.k", "8")).
 		OrderBy("a.name", true).OrderBy("age", true).
 		GroupBy("b.name", true).
-		Having(query.NewConditionGroupDefinition(query.EQUAL, "a.name", "'john'")).
+		Having(NewConditionGroupDefinition(EQUAL, "a.name", "'john'")).
 		Limit(20, 5)
 
 	viewDef := ViewDefinition{

@@ -1,4 +1,4 @@
-package query
+package rdbmstool
 
 //OrderByDefinition SQL Order By statement definition
 type OrderByDefinition struct {
