@@ -98,18 +98,13 @@ type IndexKeyDefinition struct {
 	ColumnNames []string
 }
 
-
-//GenerateTableSQL to generate "create table" SQL statement
-func (tableDef *TableDefinition) GenerateTableSQL() (string, error) {
+//SQL to generate "create table" SQL statement
+func (tableDef *TableDefinition) SQL() (string, error) {
 	if tableDef == nil {
 		return "", errors.New("input parameter is null")
 	}
 
-	//validate tableDef integrity
-	tableDefValidErr := tableDef.ValidateTableDefinition()
-	if tableDefValidErr != nil {
-		return "", tableDefValidErr
-	}
+	//TODO: validate tableDef integrity
 
 	//generate based on tableDef variable
 	var colSQL string
@@ -203,13 +198,16 @@ func (tableDef *TableDefinition) generateColumnSQL(colDef *ColumnDefinition) (st
 			colDef.Name, tableDef.generateIsNullSQL(colDef.IsNullable)), nil
 	case BOOLEAN:
 		return fmt.Sprintf("`%s` tinyint(1) %s", colDef.Name, tableDef.generateIsNullSQL(colDef.IsNullable)), nil
+	case VARCHAR:
+		return fmt.Sprintf("`%s` varchar(%d) COLLATE %s %s",
+			colDef.Name, colDef.Length, collate, tableDef.generateIsNullSQL(colDef.IsNullable)), nil
 	default:
 		return "", fmt.Errorf(
 			"unknown data column (%s) type: %d", colDef.Name, colDef.DataType)
 	}
 }
 
-func (def *TableDefinition) generateIsNullSQL(isNullable bool) string {
+func (tableDef *TableDefinition) generateIsNullSQL(isNullable bool) string {
 	if isNullable {
 		return "NULL"
 	}
@@ -358,14 +356,4 @@ func (tableDef *TableDefinition) generatePrimaryKeySQL() (string, error) {
 	}
 
 	return sql, nil
-}
-
-func (tableDef *TableDefinition) ValidateTableDefinition() error {
-	//TODO: implement validation
-	return nil
-}
-
-func (tableDef *TableDefinition) ValidateColumnDefinition() error {
-	//TODO: implement validation
-	return nil
 }

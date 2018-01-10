@@ -1,11 +1,11 @@
 package rdbmstool
 
-//SelectSQLBuilder SQl Select statement builder interface
+//QueryBuilder SQl Select statement builder
 type QueryBuilder struct {
 	selectDefinition *SelectDefinition
 }
 
-//NewSelectSQLBuilder create new Select SQL string builder
+//NewQueryBuilder create new Select SQL string builder
 func NewQueryBuilder() *QueryBuilder {
 	return &QueryBuilder{
 		selectDefinition: &SelectDefinition{

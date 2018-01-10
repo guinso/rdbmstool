@@ -5,7 +5,7 @@ import (
 	"testing"
 )
 
-func TestGenerateDataTableSQL(t *testing.T) {
+func TestSQL(t *testing.T) {
 	def := TableDefinition{
 		Name:        "account_role",
 		Columns:     []ColumnDefinition{},
@@ -70,7 +70,7 @@ func TestGenerateDataTableSQL(t *testing.T) {
 		},
 	})
 
-	sql, err := def.GenerateTableSQL()
+	sql, err := def.SQL()
 
 	if err != nil {
 		t.Errorf("Unable to generate SQL: " + err.Error())
