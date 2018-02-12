@@ -1,7 +1,9 @@
 package parser
 
-import "testing"
-import "strconv"
+import (
+	"strconv"
+	"testing"
+)
 
 func TestLexer_peekAhead(t *testing.T) {
 	lexer := lexer{
@@ -35,11 +37,13 @@ func TestLexer_nextItem(t *testing.T) {
 		tokenLeftParen,
 		tokenLiteral,
 		tokenRightParen,
+		tokenColon,
+		tokenString,
 		tokenFrom,
 		tokenLiteral,
 	}
 
-	lexer := lex("testing", "SELECT a.*, name AS koko, SUM(qty) FROM invoice")
+	lexer := lex("testing", "SELECT a.*, name AS koko, SUM(qty), 'qwe' FROM invoice")
 
 	var token tokenItem
 	for _, item := range items {
@@ -55,4 +59,58 @@ func TestLexer_nextItem(t *testing.T) {
 	}
 
 	lexer.drain() //clear all scanning process and exit the goroutine
+}
+
+func TestLexer_tokenize(t *testing.T) {
+	expectedTokens := []tokenType{
+		tokenSelect,
+		tokenLiteral,
+		tokenDot,
+		tokenAsterisk,
+		tokenColon,
+		tokenLiteral,
+		tokenAs,
+		tokenLiteral,
+		tokenEOF,
+	}
+
+	tokens := tokenize("SELECT a.*, name AS koko")
+
+	if len(expectedTokens) != len(tokens) {
+		t.Errorf("tokens quantity not tally, expect %d, actual get %d", len(expectedTokens), len(tokens))
+		return
+	}
+
+	for i := 0; i < len(expectedTokens); i++ {
+		if expectedTokens[i] != tokens[i].Type {
+			t.Errorf("Expect token %s at index %d, but get %s",
+				expectedTokens[i].String(), i, tokens[i].Type.String())
+		}
+	}
+
+	/////// test token recognition
+	expectedTokens = []tokenType{
+		tokenGroupBy,
+		tokenJoin,
+		tokenOrderBy,
+		tokenLeftJoin,
+		tokenRightJoin,
+		tokenInnerJoin,
+		tokenOuterJoin,
+		tokenEOF,
+	}
+
+	tokens = tokenize("GROUP BY JOIN ORDER BY LEFT JOIN RIGHT JOIN INNER JOIN OUTER JOIN") // JOIN LEFT JOIN RIGHT JOIN INNER JOIN OUTER JOIN")
+
+	if len(expectedTokens) != len(tokens) {
+		t.Errorf("tokens quantity not tally, expect %d, actual get %d", len(expectedTokens), len(tokens))
+		return
+	}
+
+	for i := 0; i < len(expectedTokens); i++ {
+		if expectedTokens[i] != tokens[i].Type {
+			t.Errorf("Expect token %s at index %d, but get %s",
+				expectedTokens[i].String(), i, tokens[i].Type.String())
+		}
+	}
 }

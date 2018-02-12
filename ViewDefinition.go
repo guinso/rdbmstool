@@ -4,8 +4,9 @@ import "fmt"
 
 //ViewDefinition Data Views definition
 type ViewDefinition struct {
-	Name  string
-	Query *QueryBuilder
+	Name   string
+	Query  *QueryBuilder
+	Select *SelectDefinition
 }
 
 //SQL generate View SQL string

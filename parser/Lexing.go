@@ -127,14 +127,23 @@ func lexText(lex *lexer) StateFn {
 	//handle complex keyword(s)
 	if lex.matchPrefix("group", "GROUP") {
 		return lexGroupBy(lex)
+	} else if lex.matchPrefix("order", "ORDER") {
+		return lexOrderBy(lex)
 	} else if lex.matchPrefix("inner", "INNER") {
 		return lexJoin(lex, tokenInnerJoin, 5)
-	} else if lex.matchPrefix("outer", "OUTER", "left", "LEFT", "right", "RIGHT") {
+	} else if lex.matchPrefix("outer", "OUTER") {
 		return lexJoin(lex, tokenOuterJoin, 5)
-	} else if lex.matchPrefix("left", "LEFT", "right", "RIGHT") {
+	} else if lex.matchPrefix("left", "LEFT") {
 		return lexJoin(lex, tokenLeftJoin, 4)
 	} else if lex.matchPrefix("right", "RIGHT") {
 		return lexJoin(lex, tokenRightJoin, 5)
+	} else if lex.matchPrefix("join", "JOIN") {
+		if xErr := lex.fastForward(4); xErr != nil {
+			return lex.errorf("fail to tokenize JOIN token at %d", lex.pos)
+		}
+
+		lex.emit(tokenJoin)
+		return lexText
 	}
 
 	//looking for SQL parameter
@@ -143,13 +152,15 @@ func lexText(lex *lexer) StateFn {
 	}
 
 	//looking for number
-	if isNumeric(nr1) || ((nr1 == '+' || nr1 == '-') && isNumeric(nr2)) {
+	if isNumeric(nr1) { //|| ((nr1 == '+' || nr1 == '-') && isNumeric(nr2)) {
 		return lexNumber(lex)
 	}
 
 	//looking for quoted string
 	if nr1 == '\'' {
 		return lexQuoteString(lex)
+	} else if nr1 == '"' {
+		return lexQuoteDoubleString(lex)
 	}
 
 	//looking for literal (literal can start with backquote or without backquote)
@@ -206,26 +217,26 @@ func lexJoin(lex *lexer, tokenTy tokenType, keywordLen int) StateFn {
 	//skip all white space
 	for {
 		r := lex.next()
-		if isWhiteSpace(r) {
+		if lex.matchPrefix("join", "JOIN") {
+			if err := lex.fastForward(4); err != nil {
+				return lex.errorf(err.Error())
+			}
+			break
+		} else if isWhiteSpace(r) {
 			continue //keep looping
 		} else if r == eof {
 			//handle syntax error
 			return lex.errorf("unexpected end of file reached at column %d", lex.pos)
-		} else if lex.matchPrefix("join", "JOIN") {
-			break
+		}
+
+		if r := lex.peek(); !isWhiteSpace(r) {
+			return lex.errorf("syntax error detected for JOIN statement, "+
+				"expect white space after 'join' keyword at column %d", lex.pos)
 		}
 	}
 
 	//fast forward lexer to end of 'join' keyword
-	lex.backup() //move backward one step
-	if err := lex.fastForward(len("join")); err != nil {
-		return lex.errorf(err.Error())
-	}
-
-	if r := lex.peek(); !isWhiteSpace(r) {
-		return lex.errorf("syntax error detected for JOIN statement, "+
-			"expect white space after 'join' keyword at column %d", lex.pos)
-	}
+	//lex.backup() //move backward one step
 
 	lex.emit(tokenTy)
 	return lexText
@@ -242,24 +253,67 @@ func lexGroupBy(lex *lexer) StateFn {
 
 	for {
 		r := lex.next()
-		if isWhiteSpace(r) {
+
+		if lex.matchPrefix("by", "BY") {
+			//fast forward lexer to end of 'by' keyword
+			if err := lex.fastForward(2); err != nil {
+				return lex.errorf(err.Error())
+			}
+			break
+		} else if isWhiteSpace(r) {
 			continue
 		} else if r == eof {
 			//handle syntax error
 			return lex.errorf("unexpected end of file reached at column %d", lex.pos)
-		} else if lex.matchPrefix("by", "BY") {
-			break
 		}
+
+		return lex.errorf("syntax error detected for Group By statement, "+
+			"expect white space after 'by' keyword at column %d", lex.pos)
 	}
 
 	//fast forward lexer to end of 'by' keyword
-	if err := lex.fastForward(2); err != nil {
+	// if err := lex.fastForward(2); err != nil {
+	// 	return lex.errorf(err.Error())
+	// }
+
+	// if r := lex.peek(); !isWhiteSpace(r) {
+	// 	return lex.errorf("syntax error detected for Group By statement, "+
+	// 		"expect white space after 'by' keyword at column %d", lex.pos)
+	// }
+
+	lex.emit(tokenTy)
+	return lexText
+}
+
+func lexOrderBy(lex *lexer) StateFn {
+	keywordLen := 5 //order
+	tokenTy := tokenOrderBy
+
+	//fast forward the keyword
+	if err := lex.fastForward(keywordLen); err != nil {
 		return lex.errorf(err.Error())
 	}
 
-	if r := lex.peek(); !isWhiteSpace(r) {
-		return lex.errorf("syntax error detected for Group By statement, "+
-			"expect white space after 'by' keyword at column %d", lex.pos)
+	for {
+		r := lex.next()
+		if lex.matchPrefix("by", "BY") {
+			//fast forward lexer to end of 'by' keyword
+			if err := lex.fastForward(2); err != nil {
+				return lex.errorf(err.Error())
+			}
+
+			break
+		} else if isWhiteSpace(r) {
+			continue
+		} else if r == eof {
+			//handle syntax error
+			return lex.errorf("unexpected end of file reached at column %d", lex.pos)
+		}
+
+		if r := lex.peek(); !isWhiteSpace(r) {
+			return lex.errorf("syntax error detected for Order By statement, "+
+				"expect white space after 'by' keyword at column %d", lex.pos)
+		}
 	}
 
 	lex.emit(tokenTy)
@@ -329,6 +383,21 @@ func lexQuoteString(lex *lexer) StateFn {
 		if r == eof {
 			return lex.errorf("Syntax error, quoted string not close before reach end of file")
 		} else if r == '\'' {
+			lex.emit(tokenString)
+			return lexText
+		}
+	}
+}
+
+func lexQuoteDoubleString(lex *lexer) StateFn {
+	lex.next() //consume ' character
+
+	for { //loop till reach ' charactor or EOF
+		r := lex.next()
+
+		if r == eof {
+			return lex.errorf("Syntax error, quoted string not close before reach end of file")
+		} else if r == '"' {
 			lex.emit(tokenString)
 			return lexText
 		}

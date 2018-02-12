@@ -43,6 +43,30 @@ func (l *lexer) errorf(format string, args ...interface{}) StateFn {
 	return nil
 }
 
+//Tokenize convert string context into array of tokens
+//token array is use for next process: transform into abstract syntax tree
+func tokenize(inputStr string) []tokenItem {
+	result := []tokenItem{}
+
+	lexer := lex("tokenize", inputStr)
+
+	for true {
+		tmpToken := lexer.nextItem()
+
+		if tmpToken.Type == tokenError {
+			break
+		}
+
+		result = append(result, tmpToken)
+
+		if tmpToken.Type == eof {
+			break
+		}
+	}
+
+	return result
+}
+
 // nextItem returns the next item from the input.
 // Called by the parser, not in the lexing goroutine.
 func (l *lexer) nextItem() tokenItem {

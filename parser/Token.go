@@ -50,6 +50,7 @@ const (
 	tokenView                   // VIEW keyword
 	tokenWhere                  // WHERE keyword
 	tokenGroupBy                // GROUP BY keyword
+	tokenOrderBy                // ORDER BY keyword
 	tokenHaving                 // HAVING keyword
 	tokenUnion                  // UNION keyword
 	tokenJoin                   // JOIN keyword
@@ -141,6 +142,8 @@ func (item tokenType) String() string {
 		return "greatest"
 	case tokenGroupBy:
 		return "group-by"
+	case tokenOrderBy:
+		return "order-by"
 	case tokenHaving:
 		return "having"
 	case tokenIn:
