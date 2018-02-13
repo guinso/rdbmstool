@@ -273,7 +273,7 @@ func isOperandToken(item tokenItem) bool {
 func isFunctionToken(item tokenItem) bool {
 	return item.Type == tokenAvg ||
 		item.Type == tokenCount ||
-		item.Type == tokenDistinct ||
+		//item.Type == tokenDistinct ||
 		item.Type == tokenMax ||
 		item.Type == tokenMin ||
 		item.Type == tokenSum
@@ -291,7 +291,9 @@ func parseFunction(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	//expr = sum(<literal>)
 	//TODO: expr = if(<expr>, <expr>, <expr>)
 	if !isFunctionToken(source[startIndex]) {
-		return nil, fmt.Errorf("no function syntax found at position %d", startIndex)
+		return nil, fmt.Errorf("no function syntax found at position %d (%s)",
+			startIndex,
+			source[startIndex].String())
 	}
 
 	if len(source) < (startIndex + 1) {
@@ -525,6 +527,7 @@ func parseSelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	index := startIndex + 1
+	nodes := []SyntaxTree{}
 
 	checkColon := false
 	for i := index; i < len(source); i++ {
@@ -532,6 +535,7 @@ func parseSelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			if source[i].Type == tokenColon {
 				checkColon = false
 				index = i
+				continue
 			}
 
 			//no more selectable columns
@@ -545,17 +549,51 @@ func parseSelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 
 		checkColon = true
 		index = col.EndPosition
+		i = col.EndPosition
+
+		colNodes := []SyntaxTree{*col}
 
 		//check has alias or not
 		if len(source) > (i + 1) {
+			//log.Printf("i = %d, (%s)", i+1, source[i+1].String())
 			if source[i+1].Type == tokenLiteral {
 				i++
+				colNodes = append(colNodes, SyntaxTree{
+					childNodes:    []SyntaxTree{},
+					StartPosition: i,
+					EndPosition:   i,
+					Source:        source,
+					DataType:      "alias",
+				})
+				nodes = append(nodes, SyntaxTree{
+					childNodes:    colNodes,
+					StartPosition: col.StartPosition,
+					EndPosition:   i,
+					Source:        source,
+					DataType:      "column",
+				})
+				index = i
 				continue
 			} else if source[i+1].Type == tokenAs {
 				if len(source) > (i + 2) {
 
 					if source[i+2].Type == tokenLiteral {
 						i += 2
+						colNodes = append(colNodes, SyntaxTree{
+							childNodes:    []SyntaxTree{},
+							StartPosition: i,
+							EndPosition:   i,
+							Source:        source,
+							DataType:      "alias",
+						})
+						nodes = append(nodes, SyntaxTree{
+							childNodes:    colNodes,
+							StartPosition: col.StartPosition,
+							EndPosition:   i,
+							Source:        source,
+							DataType:      "column",
+						})
+						index = i
 						continue
 					}
 
@@ -568,9 +606,24 @@ func parseSelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 				return nil, fmt.Errorf("syntax error; unexpected content ended with token AS")
 			}
 		}
+
+		nodes = append(nodes, SyntaxTree{
+			childNodes:    colNodes,
+			StartPosition: col.StartPosition,
+			EndPosition:   col.EndPosition,
+			Source:        source,
+			DataType:      "column",
+		})
+		i = col.EndPosition
 	}
 
-	return nil, nil
+	return &SyntaxTree{
+		childNodes:    nodes,
+		StartPosition: startIndex,
+		EndPosition:   index,
+		Source:        source,
+		DataType:      "select",
+	}, nil
 }
 
 func parseFrom(source []tokenItem, startIndex int) (*SyntaxTree, error) {

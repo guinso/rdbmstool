@@ -1,6 +1,7 @@
 package parser
 
 import (
+	"fmt"
 	"testing"
 )
 
@@ -145,7 +146,12 @@ func Test_parseExpression(t *testing.T) {
 }
 
 func Test_parseFunction(t *testing.T) {
-	token := tokenize("COUNT(student)")
+	token := tokenize("MIN(b.g)")
+	if _, err := parseFunction(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("COUNT(student)")
 	if _, err := parseFunction(token, 0); err != nil {
 		t.Error(err)
 	}
@@ -279,5 +285,29 @@ func Test_parseJoin(t *testing.T) {
 	token = tokenize("INNER JOIN student AS stu ON a.name = stu.name AND a.age = stu.age")
 	if _, err := parseJoin(token, 0); err != nil {
 		t.Error(err)
+	}
+}
+
+func Test_parseSelect(t *testing.T) {
+	token := tokenize("SELECT a, a.b, MAX(c), SUM(go), a + b, k.hoho AS valueA, a.b koko, gg")
+	ast, err := parseSelect(token, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(ast.childNodes) != 8 {
+		t.Errorf("expect parsing SELECT return 8 columns but get %d instead", len(ast.childNodes))
+	}
+	tmpLog := ""
+	for i := 0; i < len(ast.childNodes); i++ {
+		tmpLog = ""
+		for j := ast.childNodes[i].StartPosition; j <= ast.childNodes[i].EndPosition; j++ {
+			tmpLog = tmpLog + " " + ast.childNodes[i].Source[j].Value
+		}
+		fmt.Println(tmpLog)
+	}
+
+	token = tokenize("JOIN student AS stu ON a.name = stu.name AND a.age = stu.age")
+	if _, err := parseSelect(token, 0); err == nil {
+		t.Errorf("expect synxtax error")
 	}
 }

@@ -68,7 +68,6 @@ const (
 	tokenAnd                    // AND keyword
 	tokenOr                     // OR keyword
 	tokenNot                    // not keyword
-	tokenDistinct               // distinct keyword
 	tokenAs                     // AS keyword
 	tokenMin                    // MIN()
 	tokenMax                    //MAX()
@@ -76,6 +75,7 @@ const (
 	tokenCount                  //COUNT()
 	tokenAvg                    //AVG()
 	tokenSum                    //SUM()
+	//tokenDistinct               // distinct keyword
 
 )
 
@@ -118,8 +118,8 @@ func (item tokenType) String() string {
 		return "create"
 	case tokenDesc:
 		return "desc"
-	case tokenDistinct:
-		return "distinct"
+	// case tokenDistinct:
+	// 	return "distinct"
 	case tokenDivide:
 		return "/"
 	case tokenDot:

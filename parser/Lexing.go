@@ -34,7 +34,8 @@ var kw = []tokenItem{
 	{tokenAnd, "and", 0, 0},
 	{tokenOr, "or", 0, 0},
 	{tokenNot, "not", 0, 0},
-	{tokenDistinct, "distinct", 0, 0},
+	//{tokenDistinct, "distinct", 0, 0},
+	{tokenGroupBy, "group by", 0, 0},
 }
 
 var symbols = []struct {
@@ -68,6 +69,7 @@ var fns = []tokenItem{
 	{tokenAvg, "avg", 0, 0},
 	{tokenCount, "count", 0, 0},
 	{tokenGreatest, "greatest", 0, 0},
+	//{tokenDistinct, "distinct", 0, 0},
 }
 
 func isWhiteSpace(input rune) bool {
