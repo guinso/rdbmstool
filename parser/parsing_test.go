@@ -287,7 +287,6 @@ func Test_parseJoin(t *testing.T) {
 		t.Error(err)
 	}
 }
-
 func Test_parseSelect(t *testing.T) {
 	token := tokenize("SELECT a, a.b, MAX(c), SUM(go), a + b, k.hoho AS valueA, a.b koko, gg")
 	ast, err := parseSelect(token, 0)
@@ -309,5 +308,221 @@ func Test_parseSelect(t *testing.T) {
 	token = tokenize("JOIN student AS stu ON a.name = stu.name AND a.age = stu.age")
 	if _, err := parseSelect(token, 0); err == nil {
 		t.Errorf("expect synxtax error")
+	}
+}
+
+func Test_parseFrom(t *testing.T) {
+	token := tokenize("FROM a")
+	if _, err := parseFrom(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("FROM bangbang.student")
+	if _, err := parseFrom(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("FROM (bangbang.student)")
+	if _, err := parseFrom(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("FROM (bangbang.student 123 asd)")
+	if _, err := parseFrom(token, 0); err == nil {
+		t.Errorf("expect syntax error inside parenthesis")
+	}
+
+	token = tokenize("FROM (bangbang.student")
+	if _, err := parseFrom(token, 0); err == nil {
+		t.Errorf("expect syntax error since parenthesis is incomplete")
+	}
+
+	token = tokenize("FROM 123 + a.b")
+	if _, err := parseFrom(token, 0); err == nil {
+		t.Errorf("expect syntax error")
+	}
+
+	token = tokenize("WHERE bangbang.student > 123")
+	if _, err := parseFrom(token, 0); err == nil {
+		t.Errorf("expect syntax error since it is not WHERE clause syntax")
+	}
+
+	token = tokenize("FROM bangbang.student b")
+	ast, err := parseFrom(token, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if ast.EndPosition != 4 {
+		t.Errorf("Expect ended at index 4 but %d (%s) instead",
+			ast.EndPosition,
+			token[ast.EndPosition].String())
+	}
+	if len(ast.childNodes) != 2 {
+		t.Errorf("expect to have source alias but it is not")
+	}
+
+	token = tokenize("FROM bangbang.student AS b")
+	ast, err = parseFrom(token, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if ast.EndPosition != 5 {
+		t.Errorf("Expect ended at index 5 but %d (%s) instead",
+			ast.EndPosition,
+			token[ast.EndPosition].String())
+	}
+	if len(ast.childNodes) != 2 {
+		t.Errorf("expect to have source alias but it is not")
+	}
+
+	// token = tokenize("FROM (SELECT a.b, a.c FROM student a)")
+	// if _, err := parseFrom(token, 0); err != nil {
+	// 	t.Error(err)
+	// }
+}
+
+func Test_parseWhere(t *testing.T) {
+	token := tokenize("WHERE a.b = c.b")
+	if _, err := parseWhere(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("WHERE (a.b = c.b)")
+	if _, err := parseWhere(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("WHERE (a.b = c.b AND 23 > a.b)")
+	if _, err := parseWhere(token, 0); err != nil {
+		t.Error(err)
+	}
+}
+
+func Test_parseGroupBy(t *testing.T) {
+	token := tokenize("GROUP BY a.b, c.b")
+	if _, err := parseGroupBy(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("GROUP BY a.b ASC, c.b")
+	if _, err := parseGroupBy(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("GROUP BY a.b DESC, c.b")
+	if _, err := parseGroupBy(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("GROUP BY a.b ASC, c")
+	if _, err := parseGroupBy(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("GROUP BY a.b DESC, c ASC")
+	gb, err := parseGroupBy(token, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(gb.childNodes) != 2 {
+		t.Errorf("expect parse result gives 2 columns but get %d instead",
+			len(gb.childNodes))
+	} else {
+		if len(gb.childNodes[0].childNodes) != 2 {
+			t.Errorf("expect column 1 gives 2 nodes (col, order)")
+		}
+
+		if len(gb.childNodes[1].childNodes) != 2 {
+			t.Errorf("expect column 2 gives 2 nodes (col, order)")
+		}
+	}
+}
+
+func Test_parseOrderBy(t *testing.T) {
+	token := tokenize("ORDER BY a.b, c.b")
+	if _, err := parseOrderBy(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("ORDER BY a.b ASC, c.b")
+	if _, err := parseOrderBy(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("ORDER BY a.b DESC, c.b")
+	if _, err := parseOrderBy(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("ORDER BY a.b ASC, c")
+	if _, err := parseOrderBy(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("ORDER BY a.b DESC, c ASC")
+	gb, err := parseOrderBy(token, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if len(gb.childNodes) != 2 {
+		t.Errorf("expect parse result gives 2 columns but get %d instead",
+			len(gb.childNodes))
+	} else {
+		if len(gb.childNodes[0].childNodes) != 2 {
+			t.Errorf("expect column 1 gives 2 nodes (col, order)")
+		}
+
+		if len(gb.childNodes[1].childNodes) != 2 {
+			t.Errorf("expect column 2 gives 2 nodes (col, order)")
+		}
+	}
+}
+
+func Test_parseHaving(t *testing.T) {
+	token := tokenize("HAVING COUNT(student) > 3")
+	if _, err := parseHaving(token, 0); err != nil {
+		t.Error(err)
+	}
+}
+
+func Test_parseLimit(t *testing.T) {
+	token := tokenize("LIMIT 2")
+	if _, err := parseLimit(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("LIMIT 2, 3")
+	if _, err := parseLimit(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("LIMIT 2 OFFSET 3")
+	if _, err := parseLimit(token, 0); err != nil {
+		t.Error(err)
+	}
+}
+
+func Test_parseQuerySelect(t *testing.T) {
+	token := tokenize("SELECT name, age FROM student WHERE age > 16 AND age < 55")
+	if _, err := parseQuerySelect(token, 0); err != nil {
+		t.Error(err)
+	}
+
+	token = tokenize("SELECT name, age " +
+		"FROM student a " +
+		"LEFT JOIN classs b ON a.name = b.name " +
+		"WHERE age > 16 AND age < 55 " +
+		"GROUP BY a.name, b.leader " +
+		"HAVING a.age > 10 " +
+		"ORDER BY a.name " +
+		"LIMIT 10 OFFSET 2")
+	query, err := parseQuerySelect(token, 0)
+	if err != nil {
+		t.Error(err)
+	} else if len(query.childNodes) != 8 {
+		t.Errorf("expect has 8 nodes but get %d instead", len(query.childNodes))
+		for _, node := range query.childNodes {
+			t.Logf("%s %d-%d", node.DataType, node.StartPosition, node.EndPosition)
+		}
 	}
 }

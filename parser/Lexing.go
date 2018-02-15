@@ -5,6 +5,7 @@ package parser
 import (
 	"strconv"
 	"strings"
+	"unicode/utf8"
 )
 
 //StateFn state function, representation of a fraction of lexing state machine
@@ -76,6 +77,17 @@ func isWhiteSpace(input rune) bool {
 	return input == ' ' || input == '\n' || input == '\t'
 }
 
+func isSymbol(input rune) bool {
+	for _, sym := range symbols {
+		r, _ := utf8.DecodeRuneInString(sym.Value)
+		if r == input {
+			return true
+		}
+	}
+
+	return false
+}
+
 func isAlphaNumeric(input rune) bool {
 	return isNumeric(input) || isLetter(input)
 }
@@ -95,8 +107,10 @@ func isLetter(input rune) bool {
 }
 
 func isKeywordMatch(lex *lexer, keyword string) bool {
+	aheadRune := lex.peekAhead(len(keyword) + 1)
+
 	return lex.matchPrefix(strings.ToUpper(keyword), strings.ToLower(keyword)) &&
-		isWhiteSpace(lex.peekAhead(len(keyword)+1))
+		(isWhiteSpace(aheadRune) || isSymbol(aheadRune) || aheadRune == eof)
 }
 
 func lexText(lex *lexer) StateFn {

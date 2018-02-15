@@ -97,10 +97,12 @@ func TestLexer_tokenize(t *testing.T) {
 		tokenRightJoin,
 		tokenInnerJoin,
 		tokenOuterJoin,
+		tokenAsc,
+		tokenDesc,
 		tokenEOF,
 	}
 
-	tokens = tokenize("GROUP BY JOIN ORDER BY LEFT JOIN RIGHT JOIN INNER JOIN OUTER JOIN") // JOIN LEFT JOIN RIGHT JOIN INNER JOIN OUTER JOIN")
+	tokens = tokenize("GROUP BY JOIN ORDER BY LEFT JOIN RIGHT JOIN INNER JOIN OUTER JOIN ASC DESC") // JOIN LEFT JOIN RIGHT JOIN INNER JOIN OUTER JOIN")
 
 	if len(expectedTokens) != len(tokens) {
 		t.Errorf("tokens quantity not tally, expect %d, actual get %d", len(expectedTokens), len(tokens))
