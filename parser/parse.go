@@ -31,10 +31,3 @@ func convertAST(tokens []tokenItem) {
 		//TODO: handle syntax error
 	}
 }
-
-type SyntaxNode struct {
-	source        []tokenItem
-	startPosition int
-	endPosition   int
-	nodeType      string //TODO: change to enum
-}

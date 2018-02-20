@@ -4,9 +4,17 @@ import "fmt"
 
 //ViewDefinition Data Views definition
 type ViewDefinition struct {
-	Name   string
-	Query  *QueryBuilder
-	Select *SelectDefinition
+	Name  string
+	Query *QueryBuilder
+	//Select *SelectDefinition
+}
+
+//NewViewDefinition create a new View Definition instance
+func NewViewDefinition(viewName string) *ViewDefinition {
+	return &ViewDefinition{
+		Name:  viewName,
+		Query: NewQueryBuilder(),
+	}
 }
 
 //SQL generate View SQL string

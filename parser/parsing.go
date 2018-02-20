@@ -43,11 +43,11 @@ func parseParenthesis(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 
 	if len(tmpStartToken) == 0 {
 		return &SyntaxTree{
-			childNodes:    []SyntaxTree{},
+			ChildNodes:    []SyntaxTree{},
 			StartPosition: startPos,
 			EndPosition:   stopPos,
 			Source:        source,
-			DataType:      "parenthesis"}, nil
+			DataType:      NodeParenthesis}, nil
 	}
 
 	return nil, fmt.Errorf(
@@ -79,21 +79,21 @@ func parseField(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			endIndex = ast.EndPosition + 2
 
 			nodes = append(nodes, SyntaxTree{
-				childNodes:    []SyntaxTree{},
+				ChildNodes:    []SyntaxTree{},
 				StartPosition: ast.StartPosition + 2,
 				EndPosition:   ast.StartPosition + 2,
 				Source:        source,
-				DataType:      "alias",
+				DataType:      NodeAlias,
 			})
 		}
 	}
 
 	return &SyntaxTree{
-		childNodes:    nodes,
+		ChildNodes:    nodes,
 		StartPosition: startIndex,
 		EndPosition:   endIndex,
 		Source:        source,
-		DataType:      "field",
+		DataType:      NodeField,
 	}, nil
 }
 
@@ -121,11 +121,11 @@ func parseExpresion(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 				expectOperator = false
 				unarySign = 0
 				nodes = append(nodes, SyntaxTree{
-					childNodes:    []SyntaxTree{},
+					ChildNodes:    []SyntaxTree{},
 					StartPosition: i,
 					EndPosition:   i,
 					Source:        source,
-					DataType:      "operator",
+					DataType:      NodeOperator,
 				})
 				continue
 			}
@@ -151,21 +151,21 @@ func parseExpresion(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			expectOperator = true
 			if unarySign == 1 {
 				nodes = append(nodes, SyntaxTree{
-					childNodes:    []SyntaxTree{},
+					ChildNodes:    []SyntaxTree{},
 					StartPosition: currentLoop - 1,
 					EndPosition:   currentLoop,
 					Source:        source,
-					DataType:      "unary-operator",
+					DataType:      NodeUnaryOperator,
 				})
 
 				unarySign = 0
 			}
 			nodes = append(nodes, SyntaxTree{
-				childNodes:    []SyntaxTree{},
+				ChildNodes:    []SyntaxTree{},
 				StartPosition: currentLoop,
 				EndPosition:   i,
 				Source:        source,
-				DataType:      "operand",
+				DataType:      NodeOperand,
 			})
 			continue
 		} else if source[i].Type == tokenAdd || source[i].Type == tokenSubtract {
@@ -187,11 +187,11 @@ func parseExpresion(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			expectOperator = true
 			if unarySign == 1 {
 				nodes = append(nodes, SyntaxTree{
-					childNodes:    []SyntaxTree{},
+					ChildNodes:    []SyntaxTree{},
 					StartPosition: currentLoop - 1,
 					EndPosition:   currentLoop,
 					Source:        source,
-					DataType:      "unary-operator",
+					DataType:      NodeUnaryOperator,
 				})
 
 				unarySign = 0
@@ -223,11 +223,11 @@ func parseExpresion(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			expectOperator = true
 			if unarySign == 1 {
 				nodes = append(nodes, SyntaxTree{
-					childNodes:    []SyntaxTree{},
+					ChildNodes:    []SyntaxTree{},
 					StartPosition: currentLoop - 1,
 					EndPosition:   currentLoop,
 					Source:        source,
-					DataType:      "unary-operator",
+					DataType:      NodeUnaryOperator,
 				})
 
 				unarySign = 0
@@ -245,11 +245,11 @@ func parseExpresion(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	return &SyntaxTree{
-		childNodes:    nodes,
+		ChildNodes:    nodes,
 		StartPosition: startIndex,
 		EndPosition:   endIndex,
 		Source:        source,
-		DataType:      "expression",
+		DataType:      NodeExpression,
 	}, nil
 }
 
@@ -318,11 +318,11 @@ func parseFunction(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	return &SyntaxTree{
-		childNodes:    []SyntaxTree{*expr},
+		ChildNodes:    []SyntaxTree{*expr},
 		StartPosition: startIndex,
 		EndPosition:   paren.EndPosition,
 		Source:        source,
-		DataType:      "function",
+		DataType:      NodeFunction,
 	}, nil
 }
 
@@ -366,11 +366,11 @@ func parseJoin(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		}
 
 		nodes = append(nodes, SyntaxTree{
-			childNodes:    []SyntaxTree{},
+			ChildNodes:    []SyntaxTree{},
 			StartPosition: startIndex + 1,
 			EndPosition:   endPos,
 			Source:        source,
-			DataType:      "source",
+			DataType:      NodeJoin,
 		})
 	} else if tmp1.Type == tokenLeftParen {
 		bracket, bracketErr := parseParenthesis(source, startIndex+1)
@@ -395,11 +395,11 @@ func parseJoin(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		endPos = bracket.EndPosition
 
 		nodes = append(nodes, SyntaxTree{
-			childNodes:    []SyntaxTree{*query},
+			ChildNodes:    []SyntaxTree{*query},
 			StartPosition: bracket.StartPosition,
 			EndPosition:   bracket.EndPosition,
 			Source:        source,
-			DataType:      "source",
+			DataType:      NodeSource,
 		})
 	} else {
 		return nil, fmt.Errorf(
@@ -415,22 +415,22 @@ func parseJoin(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		endPos += 2
 
 		nodes = append(nodes, SyntaxTree{
-			childNodes:    []SyntaxTree{},
+			ChildNodes:    []SyntaxTree{},
 			StartPosition: endPos - 2,
 			EndPosition:   endPos,
 			Source:        source,
-			DataType:      "alias",
+			DataType:      NodeAlias,
 		})
 	} else if sourceLen > endPos+2 &&
 		source[endPos+1].Type == tokenLiteral {
 		endPos++
 
 		nodes = append(nodes, SyntaxTree{
-			childNodes:    []SyntaxTree{},
+			ChildNodes:    []SyntaxTree{},
 			StartPosition: endPos - 1,
 			EndPosition:   endPos,
 			Source:        source,
-			DataType:      "alias",
+			DataType:      NodeAlias,
 		})
 	}
 
@@ -453,11 +453,11 @@ func parseJoin(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	return &SyntaxTree{
-		childNodes:    nodes,
+		ChildNodes:    nodes,
 		StartPosition: startIndex,
 		EndPosition:   endPos,
 		Source:        source,
-		DataType:      "join",
+		DataType:      NodeJoin,
 	}, nil
 }
 
@@ -488,11 +488,11 @@ func parseCondition(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 				checkCondSymbol = false
 				endIndex = i
 				nodes = append(nodes, SyntaxTree{
-					childNodes:    []SyntaxTree{},
+					ChildNodes:    []SyntaxTree{},
 					StartPosition: currentLoop,
 					EndPosition:   i,
 					Source:        source,
-					DataType:      source[i].Type.String(),
+					DataType:      NodeOperator,
 				})
 				continue
 			}
@@ -544,11 +544,11 @@ func parseCondition(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	return &SyntaxTree{
-		childNodes:    nodes,
+		ChildNodes:    nodes,
 		StartPosition: startIndex,
 		EndPosition:   endIndex,
 		Source:        source,
-		DataType:      "condition",
+		DataType:      NodeCondition,
 	}, nil
 }
 
@@ -597,18 +597,18 @@ func parseSelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			if source[i+1].Type == tokenLiteral {
 				i++
 				colNodes = append(colNodes, SyntaxTree{
-					childNodes:    []SyntaxTree{},
+					ChildNodes:    []SyntaxTree{},
 					StartPosition: i,
 					EndPosition:   i,
 					Source:        source,
-					DataType:      "alias",
+					DataType:      NodeAlias,
 				})
 				nodes = append(nodes, SyntaxTree{
-					childNodes:    colNodes,
+					ChildNodes:    colNodes,
 					StartPosition: col.StartPosition,
 					EndPosition:   i,
 					Source:        source,
-					DataType:      "column",
+					DataType:      NodeSource,
 				})
 				index = i
 				continue
@@ -618,18 +618,18 @@ func parseSelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 					if source[i+2].Type == tokenLiteral {
 						i += 2
 						colNodes = append(colNodes, SyntaxTree{
-							childNodes:    []SyntaxTree{},
+							ChildNodes:    []SyntaxTree{},
 							StartPosition: i,
 							EndPosition:   i,
 							Source:        source,
-							DataType:      "alias",
+							DataType:      NodeAlias,
 						})
 						nodes = append(nodes, SyntaxTree{
-							childNodes:    colNodes,
+							ChildNodes:    colNodes,
 							StartPosition: col.StartPosition,
 							EndPosition:   i,
 							Source:        source,
-							DataType:      "column",
+							DataType:      NodeSource,
 						})
 						index = i
 						continue
@@ -646,21 +646,21 @@ func parseSelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		}
 
 		nodes = append(nodes, SyntaxTree{
-			childNodes:    colNodes,
+			ChildNodes:    colNodes,
 			StartPosition: col.StartPosition,
 			EndPosition:   col.EndPosition,
 			Source:        source,
-			DataType:      "column",
+			DataType:      NodeSource,
 		})
 		i = col.EndPosition
 	}
 
 	return &SyntaxTree{
-		childNodes:    nodes,
+		ChildNodes:    nodes,
 		StartPosition: startIndex,
 		EndPosition:   index,
 		Source:        source,
-		DataType:      "select",
+		DataType:      NodeSelect,
 	}, nil
 }
 
@@ -693,11 +693,11 @@ func parseFrom(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 
 	if expr, exprErr := parseQuerySelect(source, index); exprErr == nil {
 		fromSource = &SyntaxTree{
-			childNodes:    []SyntaxTree{*expr},
+			ChildNodes:    []SyntaxTree{*expr},
 			StartPosition: expr.StartPosition,
 			EndPosition:   expr.EndPosition,
 			Source:        source,
-			DataType:      "source",
+			DataType:      NodeSource,
 		}
 		index = expr.EndPosition
 	} else if len(source) > (index+3) &&
@@ -706,19 +706,19 @@ func parseFrom(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		source[index+2].Type == tokenLiteral {
 		index += 2
 		fromSource = &SyntaxTree{
-			childNodes:    []SyntaxTree{},
+			ChildNodes:    []SyntaxTree{},
 			StartPosition: startIndex + 1,
 			EndPosition:   index,
 			Source:        source,
-			DataType:      "source",
+			DataType:      NodeSource,
 		}
 	} else if len(source) > (index) && source[index].Type == tokenLiteral {
 		fromSource = &SyntaxTree{
-			childNodes:    []SyntaxTree{},
+			ChildNodes:    []SyntaxTree{},
 			StartPosition: index,
 			EndPosition:   index,
 			Source:        source,
-			DataType:      "source",
+			DataType:      NodeSource,
 		}
 	} else {
 		return nil, fmt.Errorf(
@@ -740,31 +740,31 @@ func parseFrom(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	if len(source) > index+1 && source[index+1].Type == tokenLiteral {
 		index++
 		nodes = append(nodes, SyntaxTree{
-			childNodes:    []SyntaxTree{},
+			ChildNodes:    []SyntaxTree{},
 			StartPosition: index - 1,
 			EndPosition:   index,
 			Source:        source,
-			DataType:      "alias",
+			DataType:      NodeAlias,
 		})
 	} else if len(source) > index+2 &&
 		source[index+1].Type == tokenAs &&
 		source[index+2].Type == tokenLiteral {
 		index += 2
 		nodes = append(nodes, SyntaxTree{
-			childNodes:    []SyntaxTree{},
+			ChildNodes:    []SyntaxTree{},
 			StartPosition: index - 2,
 			EndPosition:   index,
 			Source:        source,
-			DataType:      "alias",
+			DataType:      NodeAlias,
 		})
 	}
 
 	return &SyntaxTree{
-		childNodes:    nodes,
+		ChildNodes:    nodes,
 		StartPosition: startIndex,
 		EndPosition:   index,
 		Source:        source,
-		DataType:      "from",
+		DataType:      NodeFrom,
 	}, nil
 }
 
@@ -785,11 +785,11 @@ func parseWhere(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	return &SyntaxTree{
-		childNodes:    []SyntaxTree{*condition},
+		ChildNodes:    []SyntaxTree{*condition},
 		StartPosition: startIndex,
 		EndPosition:   condition.EndPosition,
 		Source:        source,
-		DataType:      "where",
+		DataType:      NodeWhere,
 	}, nil
 }
 
@@ -823,20 +823,20 @@ func parseGroupBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			source[index+1].Type == tokenDot &&
 			source[index+2].Type == tokenLiteral {
 			col = &SyntaxTree{
-				childNodes:    []SyntaxTree{},
+				ChildNodes:    []SyntaxTree{},
 				StartPosition: index,
 				EndPosition:   index + 2,
 				Source:        source,
-				DataType:      "colname",
+				DataType:      NodeColName,
 			}
 			index += 2
 		} else if srcLen > index && source[index].Type == tokenLiteral {
 			col = &SyntaxTree{
-				childNodes:    []SyntaxTree{},
+				ChildNodes:    []SyntaxTree{},
 				StartPosition: index,
 				EndPosition:   index,
 				Source:        source,
-				DataType:      "colname",
+				DataType:      NodeColName,
 			}
 		} else {
 			return nil, fmt.Errorf(
@@ -849,11 +849,11 @@ func parseGroupBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		if srcLen > (index+1) &&
 			(source[index+1].Type == tokenAsc || source[index+1].Type == tokenDesc) {
 			order = &SyntaxTree{
-				childNodes:    []SyntaxTree{},
+				ChildNodes:    []SyntaxTree{},
 				StartPosition: index + 1,
 				EndPosition:   index + 1,
 				Source:        source,
-				DataType:      "order",
+				DataType:      NodeOrderBy,
 			}
 			index++
 		}
@@ -864,11 +864,11 @@ func parseGroupBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		}
 
 		nodes = append(nodes, SyntaxTree{
-			childNodes:    colAst,
+			ChildNodes:    colAst,
 			StartPosition: tmpStartIndex,
 			EndPosition:   index,
 			Source:        source,
-			DataType:      "column",
+			DataType:      NodeColumn,
 		})
 
 		//check for colon token
@@ -887,11 +887,11 @@ func parseGroupBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	return &SyntaxTree{
-		childNodes:    nodes,
+		ChildNodes:    nodes,
 		StartPosition: startIndex,
 		EndPosition:   index,
 		Source:        source,
-		DataType:      "groupby",
+		DataType:      NodeGroupBy,
 	}, nil
 }
 
@@ -924,20 +924,20 @@ func parseOrderBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			source[index+1].Type == tokenDot &&
 			source[index+2].Type == tokenLiteral {
 			col = &SyntaxTree{
-				childNodes:    []SyntaxTree{},
+				ChildNodes:    []SyntaxTree{},
 				StartPosition: index,
 				EndPosition:   index + 2,
 				Source:        source,
-				DataType:      "colname",
+				DataType:      NodeColName,
 			}
 			index += 2
 		} else if srcLen > index && source[index].Type == tokenLiteral {
 			col = &SyntaxTree{
-				childNodes:    []SyntaxTree{},
+				ChildNodes:    []SyntaxTree{},
 				StartPosition: index,
 				EndPosition:   index,
 				Source:        source,
-				DataType:      "colname",
+				DataType:      NodeColumn,
 			}
 		} else {
 			return nil, fmt.Errorf(
@@ -950,11 +950,11 @@ func parseOrderBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		if srcLen > (index+1) &&
 			(source[index+1].Type == tokenAsc || source[index+1].Type == tokenDesc) {
 			order = &SyntaxTree{
-				childNodes:    []SyntaxTree{},
+				ChildNodes:    []SyntaxTree{},
 				StartPosition: index + 1,
 				EndPosition:   index + 1,
 				Source:        source,
-				DataType:      "order",
+				DataType:      NodeOrder,
 			}
 			index++
 		}
@@ -965,11 +965,11 @@ func parseOrderBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		}
 
 		nodes = append(nodes, SyntaxTree{
-			childNodes:    colAst,
+			ChildNodes:    colAst,
 			StartPosition: tmpStartIndex,
 			EndPosition:   index,
 			Source:        source,
-			DataType:      "column",
+			DataType:      NodeColumn,
 		})
 
 		//check for colon token
@@ -988,11 +988,11 @@ func parseOrderBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	return &SyntaxTree{
-		childNodes:    nodes,
+		ChildNodes:    nodes,
 		StartPosition: startIndex,
 		EndPosition:   index,
 		Source:        source,
-		DataType:      "orderby",
+		DataType:      NodeOrderBy,
 	}, nil
 }
 
@@ -1010,11 +1010,11 @@ func parseHaving(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	return &SyntaxTree{
-		childNodes:    []SyntaxTree{*cond},
+		ChildNodes:    []SyntaxTree{*cond},
 		StartPosition: startIndex,
 		EndPosition:   cond.EndPosition,
 		Source:        source,
-		DataType:      "having",
+		DataType:      NodeHaving,
 	}, nil
 }
 
@@ -1036,11 +1036,11 @@ func parseLimit(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		source[startIndex+2].Type == tokenOffset &&
 		source[startIndex+3].Type == tokenNumber {
 		return &SyntaxTree{
-			childNodes:    []SyntaxTree{},
+			ChildNodes:    []SyntaxTree{},
 			StartPosition: startIndex,
 			EndPosition:   startIndex + 3,
 			Source:        source,
-			DataType:      "limit",
+			DataType:      NodeLimit,
 		}, nil
 		//LIMIT <integer>,<integer>
 	} else if sourceLen > (startIndex+3) &&
@@ -1048,21 +1048,21 @@ func parseLimit(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		source[startIndex+2].Type == tokenColon &&
 		source[startIndex+3].Type == tokenNumber {
 		return &SyntaxTree{
-			childNodes:    []SyntaxTree{},
+			ChildNodes:    []SyntaxTree{},
 			StartPosition: startIndex,
 			EndPosition:   startIndex + 3,
 			Source:        source,
-			DataType:      "limit",
+			DataType:      NodeLimit,
 		}, nil
 		//LIMIT <integer>
 	} else if sourceLen > (startIndex+1) &&
 		source[startIndex+1].Type == tokenNumber {
 		return &SyntaxTree{
-			childNodes:    []SyntaxTree{},
+			ChildNodes:    []SyntaxTree{},
 			StartPosition: startIndex,
 			EndPosition:   startIndex + 1,
 			Source:        source,
-			DataType:      "limit",
+			DataType:      NodeLimit,
 		}, nil
 	}
 
@@ -1157,11 +1157,11 @@ func parseQuerySelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	return &SyntaxTree{
-		childNodes:    nodes,
+		ChildNodes:    nodes,
 		StartPosition: startIndex,
 		EndPosition:   index,
 		Source:        source,
-		DataType:      "queryselect",
+		DataType:      NodeQuerySelect,
 	}, nil
 }
 
@@ -1203,10 +1203,10 @@ func parseQuery(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	return &SyntaxTree{
-		childNodes:    nodes,
+		ChildNodes:    nodes,
 		StartPosition: startIndex,
 		EndPosition:   index,
 		Source:        source,
-		DataType:      "query",
+		DataType:      NodeQuery,
 	}, nil
 }

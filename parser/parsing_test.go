@@ -299,10 +299,10 @@ func Test_parseJoin(t *testing.T) {
 			jj.EndPosition,
 			token[jj.EndPosition].String())
 	}
-	if len(jj.childNodes) != 3 {
+	if len(jj.ChildNodes) != 3 {
 		t.Errorf(
 			"Expect JOIN statement has 3 nodes but get %d instead",
-			len(jj.childNodes))
+			len(jj.ChildNodes))
 	}
 
 	token = tokenize("JOIN student stu")
@@ -344,14 +344,14 @@ func Test_parseSelect(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if len(ast.childNodes) != 8 {
-		t.Errorf("expect parsing SELECT return 8 columns but get %d instead", len(ast.childNodes))
+	if len(ast.ChildNodes) != 8 {
+		t.Errorf("expect parsing SELECT return 8 columns but get %d instead", len(ast.ChildNodes))
 	}
 	tmpLog := ""
-	for i := 0; i < len(ast.childNodes); i++ {
+	for i := 0; i < len(ast.ChildNodes); i++ {
 		tmpLog = ""
-		for j := ast.childNodes[i].StartPosition; j <= ast.childNodes[i].EndPosition; j++ {
-			tmpLog = tmpLog + " " + ast.childNodes[i].Source[j].Value
+		for j := ast.ChildNodes[i].StartPosition; j <= ast.ChildNodes[i].EndPosition; j++ {
+			tmpLog = tmpLog + " " + ast.ChildNodes[i].Source[j].Value
 		}
 		fmt.Println(tmpLog)
 	}
@@ -419,7 +419,7 @@ func Test_parseFrom(t *testing.T) {
 			ast.EndPosition,
 			token[ast.EndPosition].String())
 	}
-	if len(ast.childNodes) != 2 {
+	if len(ast.ChildNodes) != 2 {
 		t.Errorf("expect to have source alias but it is not")
 	}
 
@@ -433,7 +433,7 @@ func Test_parseFrom(t *testing.T) {
 			ast.EndPosition,
 			token[ast.EndPosition].String())
 	}
-	if len(ast.childNodes) != 2 {
+	if len(ast.ChildNodes) != 2 {
 		t.Errorf("expect to have source alias but it is not")
 	}
 
@@ -486,15 +486,15 @@ func Test_parseGroupBy(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if len(gb.childNodes) != 2 {
+	if len(gb.ChildNodes) != 2 {
 		t.Errorf("expect parse result gives 2 columns but get %d instead",
-			len(gb.childNodes))
+			len(gb.ChildNodes))
 	} else {
-		if len(gb.childNodes[0].childNodes) != 2 {
+		if len(gb.ChildNodes[0].ChildNodes) != 2 {
 			t.Errorf("expect column 1 gives 2 nodes (col, order)")
 		}
 
-		if len(gb.childNodes[1].childNodes) != 2 {
+		if len(gb.ChildNodes[1].ChildNodes) != 2 {
 			t.Errorf("expect column 2 gives 2 nodes (col, order)")
 		}
 	}
@@ -526,15 +526,15 @@ func Test_parseOrderBy(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if len(gb.childNodes) != 2 {
+	if len(gb.ChildNodes) != 2 {
 		t.Errorf("expect parse result gives 2 columns but get %d instead",
-			len(gb.childNodes))
+			len(gb.ChildNodes))
 	} else {
-		if len(gb.childNodes[0].childNodes) != 2 {
+		if len(gb.ChildNodes[0].ChildNodes) != 2 {
 			t.Errorf("expect column 1 gives 2 nodes (col, order)")
 		}
 
-		if len(gb.childNodes[1].childNodes) != 2 {
+		if len(gb.ChildNodes[1].ChildNodes) != 2 {
 			t.Errorf("expect column 2 gives 2 nodes (col, order)")
 		}
 	}
@@ -581,9 +581,9 @@ func Test_parseQuerySelect(t *testing.T) {
 	query, err := parseQuerySelect(token, 0)
 	if err != nil {
 		t.Error(err)
-	} else if len(query.childNodes) != 8 {
-		t.Errorf("expect has 8 nodes but get %d instead", len(query.childNodes))
-		for _, node := range query.childNodes {
+	} else if len(query.ChildNodes) != 8 {
+		t.Errorf("expect has 8 nodes but get %d instead", len(query.ChildNodes))
+		for _, node := range query.ChildNodes {
 			t.Logf("%s %d-%d", node.DataType, node.StartPosition, node.EndPosition)
 		}
 	}
@@ -596,10 +596,22 @@ func Test_parseQuery(t *testing.T) {
 	if err != nil {
 		t.Error(err)
 	}
-	if query != nil && len(query.childNodes) != 2 {
-		t.Errorf("Expect child nodes is 2 but get %d instead", len(query.childNodes))
-		for i := 0; i < len(query.childNodes); i++ {
-			t.Logf("%d => %s", i, query.childNodes[i].DataType)
+	if query != nil && len(query.ChildNodes) != 2 {
+		t.Errorf("Expect child nodes is 2 but get %d instead", len(query.ChildNodes))
+		for i := 0; i < len(query.ChildNodes); i++ {
+			t.Logf("%d => %s", i, query.ChildNodes[i].DataType)
+		}
+	}
+
+	token = tokenize("select `account`.`username` AS `username`,`account`.`pwd` AS `pwd` from `account`")
+	query, err = parseQuery(token, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if query != nil && len(query.ChildNodes) != 1 {
+		t.Errorf("Expect child nodes is 1 but get %d instead", len(query.ChildNodes))
+		for i := 0; i < len(query.ChildNodes); i++ {
+			t.Logf("%d => %s", i, query.ChildNodes[i].DataType)
 		}
 	}
 }

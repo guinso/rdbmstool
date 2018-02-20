@@ -17,7 +17,8 @@ func NewQueryBuilder() *QueryBuilder {
 			Having:  nil,
 			OrderBy: []OrderByDefinition{},
 			Limit:   nil,
-			Union:   []SelectDefinition{}}}
+			Union:   []SelectDefinition{},
+		}}
 }
 
 //Select add select column
