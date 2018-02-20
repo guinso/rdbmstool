@@ -268,8 +268,25 @@ func Test_parseJoin(t *testing.T) {
 	}
 
 	token = tokenize("JOIN student AS stu")
-	if _, err := parseJoin(token, 0); err != nil {
+	jj, err := parseJoin(token, 0)
+	if err != nil {
 		t.Error(err)
+	}
+	if jj.EndPosition != 3 {
+		t.Errorf("Expect JOIN statement ended at index 3 but %d (%s) instead",
+			jj.EndPosition,
+			token[jj.EndPosition].String())
+	}
+
+	token = tokenize("JOIN student stu")
+	jj, err = parseJoin(token, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if jj.EndPosition != 2 {
+		t.Errorf("Expect JOIN statement ended at index 2 but %d (%s) instead",
+			jj.EndPosition,
+			token[jj.EndPosition].String())
 	}
 
 	token = tokenize("LEFT JOIN student AS stu")
@@ -283,9 +300,16 @@ func Test_parseJoin(t *testing.T) {
 	}
 
 	token = tokenize("INNER JOIN student AS stu ON a.name = stu.name AND a.age = stu.age")
-	if _, err := parseJoin(token, 0); err != nil {
+	jj, err = parseJoin(token, 0)
+	if err != nil {
 		t.Error(err)
 	}
+	if jj.EndPosition != 19 {
+		t.Errorf("Expect complete JOIN syntax ended at index 19 but %d (%s) instead",
+			jj.EndPosition,
+			token[jj.EndPosition].String())
+	}
+
 }
 func Test_parseSelect(t *testing.T) {
 	token := tokenize("SELECT a, a.b, MAX(c), SUM(go), a + b, k.hoho AS valueA, a.b koko, gg")

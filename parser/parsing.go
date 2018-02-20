@@ -356,12 +356,11 @@ func parseJoin(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			source[startIndex].Pos,
 			source[startIndex].String())
 	}
-
 	//source
 	tmp1 := source[startIndex+1]
 	if tmp1.Type != tokenLiteral {
 		return nil, fmt.Errorf(
-			"syntax error found next to JOIN token at position %d (%s)",
+			"syntax error found (no join source) next to JOIN token at position %d (%s)",
 			tmp1.Pos,
 			tmp1.String())
 	}
@@ -381,7 +380,7 @@ func parseJoin(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		DataType:      "source",
 	})
 
-	//AS
+	//source alias
 	if sourceLen > (endPos+2) &&
 		source[endPos+1].Type == tokenAs &&
 		source[endPos+2].Type == tokenLiteral {
@@ -389,7 +388,18 @@ func parseJoin(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 
 		nodes = append(nodes, SyntaxTree{
 			childNodes:    []SyntaxTree{},
-			StartPosition: endPos,
+			StartPosition: endPos - 2,
+			EndPosition:   endPos,
+			Source:        source,
+			DataType:      "alias",
+		})
+	} else if sourceLen > endPos+2 &&
+		source[endPos+1].Type == tokenLiteral {
+		endPos++
+
+		nodes = append(nodes, SyntaxTree{
+			childNodes:    []SyntaxTree{},
+			StartPosition: endPos - 1,
 			EndPosition:   endPos,
 			Source:        source,
 			DataType:      "alias",
