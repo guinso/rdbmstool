@@ -278,6 +278,33 @@ func Test_parseJoin(t *testing.T) {
 			token[jj.EndPosition].String())
 	}
 
+	token = tokenize("JOIN (SELECT * FROM member WHERE age > 4 ORDER BY name) AS stu")
+	jj, err = parseJoin(token, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if jj.EndPosition != 14 {
+		t.Errorf("Expect JOIN statement ended at index 14 but %d (%s) instead",
+			jj.EndPosition,
+			token[jj.EndPosition].String())
+	}
+
+	token = tokenize("JOIN (SELECT * FROM member WHERE age > 4 ORDER BY name) stu ON a.name = stu.name")
+	jj, err = parseJoin(token, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if jj.EndPosition != 21 {
+		t.Errorf("Expect JOIN statement ended at index 21 but %d (%s) instead",
+			jj.EndPosition,
+			token[jj.EndPosition].String())
+	}
+	if len(jj.childNodes) != 3 {
+		t.Errorf(
+			"Expect JOIN statement has 3 nodes but get %d instead",
+			len(jj.childNodes))
+	}
+
 	token = tokenize("JOIN student stu")
 	jj, err = parseJoin(token, 0)
 	if err != nil {
@@ -359,6 +386,17 @@ func Test_parseFrom(t *testing.T) {
 	token = tokenize("FROM (bangbang.student")
 	if _, err := parseFrom(token, 0); err == nil {
 		t.Errorf("expect syntax error since parenthesis is incomplete")
+	}
+
+	token = tokenize("FROM (SELECT * FROM a WHERE name = 'john')")
+	from, err := parseFrom(token, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if from != nil && from.EndPosition != 10 {
+		t.Errorf("Expect FROM statement ended at index 10 but %d (%s) instead",
+			from.EndPosition,
+			token[from.EndPosition].String())
 	}
 
 	token = tokenize("FROM 123 + a.b")
@@ -547,6 +585,21 @@ func Test_parseQuerySelect(t *testing.T) {
 		t.Errorf("expect has 8 nodes but get %d instead", len(query.childNodes))
 		for _, node := range query.childNodes {
 			t.Logf("%s %d-%d", node.DataType, node.StartPosition, node.EndPosition)
+		}
+	}
+}
+
+func Test_parseQuery(t *testing.T) {
+	token := tokenize("SELECT name, age FROM student WHERE age > 16 AND age < 55 UNION " +
+		"SELECT name, age FROM gogogo")
+	query, err := parseQuery(token, 0)
+	if err != nil {
+		t.Error(err)
+	}
+	if query != nil && len(query.childNodes) != 2 {
+		t.Errorf("Expect child nodes is 2 but get %d instead", len(query.childNodes))
+		for i := 0; i < len(query.childNodes); i++ {
+			t.Logf("%d => %s", i, query.childNodes[i].DataType)
 		}
 	}
 }

@@ -63,7 +63,7 @@ func parseField(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	//expr = <expression> AS <literal>
 	//expr = (<expression>) AS <literal>
 
-	//TODO: try parse by expression
+	//parse by expression
 	ast, astErr := parseExpresion(source, startIndex)
 	if astErr != nil {
 		return nil, astErr
@@ -349,36 +349,64 @@ func parseJoin(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		return nil, fmt.Errorf("Expect position %d is Join token but it is not", tmp.Pos)
 	}
 
-	//TODO: support select expression
-
+	//source
 	if sourceLen <= (startIndex + 1) {
 		return nil, fmt.Errorf("incomplete join syntax at position %d (%s)",
 			source[startIndex].Pos,
 			source[startIndex].String())
 	}
-	//source
 	tmp1 := source[startIndex+1]
-	if tmp1.Type != tokenLiteral {
+	if tmp1.Type == tokenLiteral {
+		endPos = startIndex + 1
+
+		if sourceLen > (endPos+2) &&
+			source[endPos+1].Type == tokenDot &&
+			source[endPos+2].Type == tokenLiteral {
+			endPos += 2
+		}
+
+		nodes = append(nodes, SyntaxTree{
+			childNodes:    []SyntaxTree{},
+			StartPosition: startIndex + 1,
+			EndPosition:   endPos,
+			Source:        source,
+			DataType:      "source",
+		})
+	} else if tmp1.Type == tokenLeftParen {
+		bracket, bracketErr := parseParenthesis(source, startIndex+1)
+		if bracketErr != nil {
+			return nil, bracketErr
+		}
+
+		query, queryErr := parseQuerySelect(source, startIndex+2)
+		if queryErr != nil {
+			return nil, queryErr
+		}
+
+		if query.EndPosition+1 != bracket.EndPosition {
+			return nil, fmt.Errorf(
+				"Expect query select ended at index %d (%s), but %d (%s) instead",
+				bracket.EndPosition,
+				source[bracket.EndPosition].String(),
+				query.EndPosition,
+				source[query.EndPosition].String())
+		}
+
+		endPos = bracket.EndPosition
+
+		nodes = append(nodes, SyntaxTree{
+			childNodes:    []SyntaxTree{*query},
+			StartPosition: bracket.StartPosition,
+			EndPosition:   bracket.EndPosition,
+			Source:        source,
+			DataType:      "source",
+		})
+	} else {
 		return nil, fmt.Errorf(
 			"syntax error found (no join source) next to JOIN token at position %d (%s)",
 			tmp1.Pos,
 			tmp1.String())
 	}
-	endPos = startIndex + 1
-
-	if sourceLen > (endPos+2) &&
-		source[endPos+1].Type == tokenDot &&
-		source[endPos+2].Type == tokenLiteral {
-		endPos += 2
-	}
-
-	nodes = append(nodes, SyntaxTree{
-		childNodes:    []SyntaxTree{},
-		StartPosition: startIndex + 1,
-		EndPosition:   endPos,
-		Source:        source,
-		DataType:      "source",
-	})
 
 	//source alias
 	if sourceLen > (endPos+2) &&
@@ -666,8 +694,8 @@ func parseFrom(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	if expr, exprErr := parseQuerySelect(source, index); exprErr == nil {
 		fromSource = &SyntaxTree{
 			childNodes:    []SyntaxTree{*expr},
-			StartPosition: bracket.StartPosition,
-			EndPosition:   bracket.EndPosition,
+			StartPosition: expr.StartPosition,
+			EndPosition:   expr.EndPosition,
 			Source:        source,
 			DataType:      "source",
 		}
@@ -1142,12 +1170,14 @@ func parseQuery(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	//expr = <selectQuery> UNION expr
 	//expr = <selectQuery>
 	index := startIndex
+	nodes := []SyntaxTree{}
 
 	tmp, tmpErr := parseQuerySelect(source, index)
 	if tmpErr != nil {
 		return nil, tmpErr
 	}
 	index = tmp.EndPosition
+	nodes = append(nodes, *tmp)
 
 	for i := (index + 1); i < len(source); i++ {
 		if source[i].Type == tokenUnion {
@@ -1160,6 +1190,9 @@ func parseQuery(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 
 				i = tmp1.EndPosition
 				index = i
+				nodes = append(nodes, *tmp1)
+
+				continue
 			}
 
 			return nil, fmt.Errorf(
@@ -1170,7 +1203,7 @@ func parseQuery(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	return &SyntaxTree{
-		childNodes:    []SyntaxTree{},
+		childNodes:    nodes,
 		StartPosition: startIndex,
 		EndPosition:   index,
 		Source:        source,
