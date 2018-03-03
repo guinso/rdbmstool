@@ -26,9 +26,9 @@ type SelectDefinition struct {
 	Select  []SelectColumnDefinition
 	From    *FromDefinition
 	Join    []JoinDefinition
-	Where   *ConditionGroupDefinition
+	Where   *ConditionDefinition
 	GroupBy []GroupByDefinition
-	Having  *ConditionGroupDefinition
+	Having  *ConditionDefinition
 	OrderBy []OrderByDefinition
 	Limit   *LimitDefinition
 	Union   []SelectDefinition

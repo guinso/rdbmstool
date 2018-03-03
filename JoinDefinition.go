@@ -23,7 +23,7 @@ type JoinDefinition struct {
 
 	Alias string
 	Type  JoinType
-	Where *ConditionGroupDefinition
+	Where *ConditionDefinition
 }
 
 //SQL generate SQL string for Join link definition
@@ -77,7 +77,7 @@ func (join *JoinDefinition) SQL() (string, error) {
 
 //NewJoinDefinition create new Join statement definition instance
 func NewJoinDefinition(source string, alias string,
-	category JoinType, condition *ConditionGroupDefinition) *JoinDefinition {
+	category JoinType, condition *ConditionDefinition) *JoinDefinition {
 	return &JoinDefinition{
 		source:   source,
 		subQuery: nil,
@@ -88,7 +88,7 @@ func NewJoinDefinition(source string, alias string,
 
 //NewJoinDefinitionSubQuery create new Join statement definition instance from sub query as source
 func NewJoinDefinitionSubQuery(source *SelectDefinition, alias string,
-	category JoinType, condition *ConditionGroupDefinition) *JoinDefinition {
+	category JoinType, condition *ConditionDefinition) *JoinDefinition {
 	return &JoinDefinition{
 		source:   "",
 		subQuery: source,

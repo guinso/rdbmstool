@@ -48,8 +48,6 @@ const (
 	NodeParam
 	//NodeList a list of SQL expression
 	NodeList
-	//NodeCondition a logical comparison expression; e.g. x > y
-	NodeCondition
 	//NodeSelect SQL select statement
 	NodeSelect
 	//NodeFrom SQL from statement
@@ -76,8 +74,8 @@ const (
 	NodeSource
 	//NodeOperator oprator token
 	NodeOperator
-	//NodeUnaryOperator unary operator token
-	NodeUnaryOperator
+	//NodeUnary unary statement
+	NodeUnary
 	//NodeOperand operand statement
 	NodeOperand
 	//NodeParenthesis parenthesis statement
@@ -94,6 +92,8 @@ const (
 	NodeColumn
 	//NodeOrder order token (acending/descending)
 	NodeOrder
+	//NodeCondition SQL consition statement
+	NodeCondition
 )
 
 //ParseSQL parse SQL string input into abstract syntax tree

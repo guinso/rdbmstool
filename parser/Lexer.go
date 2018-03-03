@@ -35,7 +35,7 @@ type lexer struct {
 // state, terminating l.run.
 func (l *lexer) errorf(format string, args ...interface{}) StateFn {
 	l.items <- tokenItem{
-		tokenError,
+		TokenError,
 		fmt.Sprintf(format, args...),
 		l.start,
 		l.line}
@@ -53,7 +53,7 @@ func tokenize(inputStr string) []tokenItem {
 	for true {
 		tmpToken := lexer.nextItem()
 
-		if tmpToken.Type == tokenError {
+		if tmpToken.Type == TokenError {
 			break
 		}
 
@@ -83,12 +83,12 @@ func (l *lexer) drain() {
 }
 
 //emit pass a Token item back to client
-func (l *lexer) emit(t tokenType) {
+func (l *lexer) emit(t TokenType) {
 	l.items <- tokenItem{t, l.input[l.start:l.pos], l.start, l.line}
 
 	// Some items contain text internally. If so, count their newlines.
 	switch t {
-	case tokenText:
+	case TokenText:
 		l.line += strings.Count(l.input[l.start:l.pos], "\n")
 	}
 

@@ -23,24 +23,24 @@ func TestLexer_peekAhead(t *testing.T) {
 }
 
 func TestLexer_nextItem(t *testing.T) {
-	items := []tokenType{
-		tokenSelect,
-		tokenLiteral,
-		tokenDot,
-		tokenAsterisk,
-		tokenColon,
-		tokenLiteral,
-		tokenAs,
-		tokenLiteral,
-		tokenColon,
-		tokenSum,
-		tokenLeftParen,
-		tokenLiteral,
-		tokenRightParen,
-		tokenColon,
-		tokenString,
-		tokenFrom,
-		tokenLiteral,
+	items := []TokenType{
+		TokenSelect,
+		TokenLiteral,
+		TokenDot,
+		TokenAsterisk,
+		TokenColon,
+		TokenLiteral,
+		TokenAs,
+		TokenLiteral,
+		TokenColon,
+		TokenSum,
+		TokenLeftParen,
+		TokenLiteral,
+		TokenRightParen,
+		TokenColon,
+		TokenString,
+		TokenFrom,
+		TokenLiteral,
 	}
 
 	lexer := lex("testing", "SELECT a.*, name AS koko, SUM(qty), 'qwe' FROM invoice")
@@ -49,9 +49,9 @@ func TestLexer_nextItem(t *testing.T) {
 	for _, item := range items {
 		token = lexer.nextItem()
 
-		if token.Type == tokenEOF {
+		if token.Type == TokenEOF {
 			break
-		} else if token.Type == tokenError {
+		} else if token.Type == TokenError {
 			t.Error(token.String())
 		} else if token.Type != item {
 			t.Errorf("Expect %s but get %s", item, token.String())
@@ -62,16 +62,16 @@ func TestLexer_nextItem(t *testing.T) {
 }
 
 func TestLexer_tokenize(t *testing.T) {
-	expectedTokens := []tokenType{
-		tokenSelect,
-		tokenLiteral,
-		tokenDot,
-		tokenAsterisk,
-		tokenColon,
-		tokenLiteral,
-		tokenAs,
-		tokenLiteral,
-		tokenEOF,
+	expectedTokens := []TokenType{
+		TokenSelect,
+		TokenLiteral,
+		TokenDot,
+		TokenAsterisk,
+		TokenColon,
+		TokenLiteral,
+		TokenAs,
+		TokenLiteral,
+		TokenEOF,
 	}
 
 	tokens := tokenize("SELECT a.*, name AS koko")
@@ -89,17 +89,17 @@ func TestLexer_tokenize(t *testing.T) {
 	}
 
 	/////// test token recognition
-	expectedTokens = []tokenType{
-		tokenGroupBy,
-		tokenJoin,
-		tokenOrderBy,
-		tokenLeftJoin,
-		tokenRightJoin,
-		tokenInnerJoin,
-		tokenOuterJoin,
-		tokenAsc,
-		tokenDesc,
-		tokenEOF,
+	expectedTokens = []TokenType{
+		TokenGroupBy,
+		TokenJoin,
+		TokenOrderBy,
+		TokenLeftJoin,
+		TokenRightJoin,
+		TokenInnerJoin,
+		TokenOuterJoin,
+		TokenAsc,
+		TokenDesc,
+		TokenEOF,
 	}
 
 	tokens = tokenize("GROUP BY JOIN ORDER BY LEFT JOIN RIGHT JOIN INNER JOIN OUTER JOIN ASC DESC") // JOIN LEFT JOIN RIGHT JOIN INNER JOIN OUTER JOIN")

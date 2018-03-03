@@ -4,12 +4,12 @@ import (
 	"fmt"
 )
 
-//tokenType token type for SQL string
-type tokenType uint8
+//TokenType token type for SQL string
+type TokenType uint8
 
-//tokenItem single token definition
+//TokenItem single token definition
 type tokenItem struct {
-	Type  tokenType //token type
+	Type  TokenType //token type
 	Value string    //extracted string value
 	Pos   int       //column index of the line
 	line  int       //line number of the string
@@ -17,73 +17,73 @@ type tokenItem struct {
 
 //Token type constants
 const (
-	tokenError        tokenType = iota
-	tokenEOF                    //end of file
-	tokenEqual                  // =
-	tokenNotEqual               //<>, or !=
-	tokenGreater                // >
-	tokenGreaterEqual           // >=
-	tokenLesser                 // <
-	tokenLesserEqual            // <=
-	tokenLike                   // LIKE
-	tokenBetween                // BETWEEN
-	tokenIn                     // IN
-	tokenQuestionMark           // ?
-	tokenWildcard               // %
-	tokenAsterisk               // *
-	tokenAdd                    // +
-	tokenSubtract               // -
-	tokenDivide                 // /
-	tokenDot                    // .
-	tokenLeftParen              // (
-	tokenRightParen             // )
-	tokenColon                  // ,
-	tokenSemiColon              // ;
-	tokenString                 // quoted string; 'sample'
-	tokenNumber                 // number; -1.23 or 34.6
-	tokenParameter              // parameter; :param1
-	tokenLiteral                // `asd` or asd
-	tokenSelect                 // SELECT keyword
-	tokenFrom                   // FROM keyword
-	tokenCreate                 // CREATE keyword
-	tokenTable                  // TABLE keyword
-	tokenView                   // VIEW keyword
-	tokenWhere                  // WHERE keyword
-	tokenGroupBy                // GROUP BY keyword
-	tokenOrderBy                // ORDER BY keyword
-	tokenHaving                 // HAVING keyword
-	tokenUnion                  // UNION keyword
-	tokenJoin                   // JOIN keyword
-	tokenInnerJoin              // INNER JOIN keyword
-	tokenOuterJoin              // OUTER JOIN keyword
-	tokenLeftJoin               // LEFT JOIN keyword
-	tokenRightJoin              // RIGHT JOIN keyword
-	tokenOn                     // ON keyword
-	tokenLimit                  // LIMIT keyword
-	tokenOffset                 // OFFSET keyword
-	tokenAsc                    // ASC keyword
-	tokenDesc                   // DESC keyword
-	tokenDrop                   // DROP keyword
-	tokenText                   // anonymous text token to take care EOF case (please refer Lexing.go -> LexText())
-	tokenAnd                    // AND keyword
-	tokenOr                     // OR keyword
-	tokenNot                    // not keyword
-	tokenAs                     // AS keyword
-	tokenMin                    // MIN()
-	tokenMax                    //MAX()
-	tokenGreatest               //GREATEST()
-	tokenCount                  //COUNT()
-	tokenAvg                    //AVG()
-	tokenSum                    //SUM()
+	TokenError        TokenType = iota //error token identifier
+	TokenEOF                           //end of file
+	TokenEqual                         // =
+	TokenNotEqual                      //<>, or !=
+	TokenGreater                       // >
+	TokenGreaterEqual                  // >=
+	TokenLesser                        // <
+	TokenLesserEqual                   // <=
+	TokenLike                          // LIKE
+	TokenBetween                       // BETWEEN
+	TokenIn                            // IN
+	TokenQuestionMark                  // ?
+	TokenWildcard                      // %
+	TokenAsterisk                      // *
+	TokenAdd                           // +
+	TokenSubtract                      // -
+	TokenDivide                        // /
+	TokenDot                           // .
+	TokenLeftParen                     // (
+	TokenRightParen                    // )
+	TokenColon                         // ,
+	TokenSemiColon                     // ;
+	TokenString                        // quoted string; 'sample'
+	TokenNumber                        // number; -1.23 or 34.6
+	TokenParameter                     // parameter; :param1
+	TokenLiteral                       // `asd` or asd
+	TokenSelect                        // SELECT keyword
+	TokenFrom                          // FROM keyword
+	TokenCreate                        // CREATE keyword
+	TokenTable                         // TABLE keyword
+	TokenView                          // VIEW keyword
+	TokenWhere                         // WHERE keyword
+	TokenGroupBy                       // GROUP BY keyword
+	TokenOrderBy                       // ORDER BY keyword
+	TokenHaving                        // HAVING keyword
+	TokenUnion                         // UNION keyword
+	TokenJoin                          // JOIN keyword
+	TokenInnerJoin                     // INNER JOIN keyword
+	TokenOuterJoin                     // OUTER JOIN keyword
+	TokenLeftJoin                      // LEFT JOIN keyword
+	TokenRightJoin                     // RIGHT JOIN keyword
+	TokenOn                            // ON keyword
+	TokenLimit                         // LIMIT keyword
+	TokenOffset                        // OFFSET keyword
+	TokenAsc                           // ASC keyword
+	TokenDesc                          // DESC keyword
+	TokenDrop                          // DROP keyword
+	TokenText                          // anonymous text token to take care EOF case (please refer Lexing.go -> LexText())
+	TokenAnd                           // AND keyword
+	TokenOr                            // OR keyword
+	TokenNot                           // not keyword
+	TokenAs                            // AS keyword
+	TokenMin                           // MIN()
+	TokenMax                           //MAX()
+	TokenGreatest                      //GREATEST()
+	TokenCount                         //COUNT()
+	TokenAvg                           //AVG()
+	TokenSum                           //SUM()
 	//tokenDistinct               // distinct keyword
 
 )
 
 func (item tokenItem) String() string {
 	switch item.Type {
-	case tokenError:
+	case TokenError:
 		return item.Value
-	case tokenEOF:
+	case TokenEOF:
 		return "EOF"
 	default:
 		if len(item.Value) > 10 {
@@ -94,125 +94,125 @@ func (item tokenItem) String() string {
 	}
 }
 
-func (item tokenType) String() string {
+func (item TokenType) String() string {
 	switch item {
-	case tokenAdd:
+	case TokenAdd:
 		return "add"
-	case tokenAnd:
+	case TokenAnd:
 		return "and"
-	case tokenAs:
+	case TokenAs:
 		return "as"
-	case tokenAsc:
+	case TokenAsc:
 		return "asc"
-	case tokenAsterisk:
+	case TokenAsterisk:
 		return "*"
-	case tokenAvg:
+	case TokenAvg:
 		return "avg"
-	case tokenBetween:
+	case TokenBetween:
 		return "between"
-	case tokenColon:
+	case TokenColon:
 		return ","
-	case tokenCount:
+	case TokenCount:
 		return "count"
-	case tokenCreate:
+	case TokenCreate:
 		return "create"
-	case tokenDesc:
+	case TokenDesc:
 		return "desc"
 	// case tokenDistinct:
 	// 	return "distinct"
-	case tokenDivide:
+	case TokenDivide:
 		return "/"
-	case tokenDot:
+	case TokenDot:
 		return "."
-	case tokenDrop:
+	case TokenDrop:
 		return "drop"
-	case tokenEOF:
+	case TokenEOF:
 		return "EOF"
-	case tokenEqual:
+	case TokenEqual:
 		return "="
-	case tokenError:
+	case TokenError:
 		return "ERROR"
-	case tokenFrom:
+	case TokenFrom:
 		return "from"
-	case tokenGreater:
+	case TokenGreater:
 		return ">"
-	case tokenGreaterEqual:
+	case TokenGreaterEqual:
 		return ">="
-	case tokenGreatest:
+	case TokenGreatest:
 		return "greatest"
-	case tokenGroupBy:
+	case TokenGroupBy:
 		return "group-by"
-	case tokenOrderBy:
+	case TokenOrderBy:
 		return "order-by"
-	case tokenHaving:
+	case TokenHaving:
 		return "having"
-	case tokenIn:
+	case TokenIn:
 		return "in"
-	case tokenInnerJoin:
+	case TokenInnerJoin:
 		return "inner-join"
-	case tokenJoin:
+	case TokenJoin:
 		return "join"
-	case tokenLeftJoin:
+	case TokenLeftJoin:
 		return "left-join"
-	case tokenLeftParen:
+	case TokenLeftParen:
 		return "("
-	case tokenLesser:
+	case TokenLesser:
 		return "<"
-	case tokenLesserEqual:
+	case TokenLesserEqual:
 		return "<="
-	case tokenLike:
+	case TokenLike:
 		return "like"
-	case tokenLimit:
+	case TokenLimit:
 		return "limit"
-	case tokenLiteral:
+	case TokenLiteral:
 		return "literal"
-	case tokenMax:
+	case TokenMax:
 		return "max"
-	case tokenMin:
+	case TokenMin:
 		return "min"
-	case tokenNot:
+	case TokenNot:
 		return "not"
-	case tokenNotEqual:
+	case TokenNotEqual:
 		return "<>"
-	case tokenNumber:
+	case TokenNumber:
 		return "numeric"
-	case tokenOffset:
+	case TokenOffset:
 		return "offset"
-	case tokenOn:
+	case TokenOn:
 		return "on"
-	case tokenOr:
+	case TokenOr:
 		return "or"
-	case tokenOuterJoin:
+	case TokenOuterJoin:
 		return "outer-join"
-	case tokenParameter:
+	case TokenParameter:
 		return "parameter"
-	case tokenQuestionMark:
+	case TokenQuestionMark:
 		return "?"
-	case tokenRightJoin:
+	case TokenRightJoin:
 		return "right-join"
-	case tokenRightParen:
+	case TokenRightParen:
 		return ")"
-	case tokenSelect:
+	case TokenSelect:
 		return "select"
-	case tokenSemiColon:
+	case TokenSemiColon:
 		return ";"
-	case tokenString:
+	case TokenString:
 		return "string"
-	case tokenSubtract:
+	case TokenSubtract:
 		return "-"
-	case tokenSum:
+	case TokenSum:
 		return "sum"
-	case tokenTable:
+	case TokenTable:
 		return "table"
-	case tokenText:
+	case TokenText:
 		return "text"
-	case tokenUnion:
+	case TokenUnion:
 		return "union"
-	case tokenView:
+	case TokenView:
 		return "view"
-	case tokenWhere:
+	case TokenWhere:
 		return "where"
-	case tokenWildcard:
+	case TokenWildcard:
 		return "%"
 	default:
 		return "undefined"

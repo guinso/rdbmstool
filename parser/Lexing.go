@@ -14,62 +14,62 @@ type StateFn func(item *lexer) StateFn
 const eof = 0
 
 var kw = []tokenItem{
-	{tokenAs, "as", 0, 0},
-	{tokenSelect, "select", 0, 0},
-	{tokenFrom, "from", 0, 0},
-	{tokenJoin, "join", 0, 0},
-	{tokenHaving, "having", 0, 0},
-	{tokenWhere, "where", 0, 0},
-	{tokenUnion, "union", 0, 0},
-	{tokenLimit, "limit", 0, 0},
-	{tokenOffset, "offset", 0, 0},
-	{tokenOn, "on", 0, 0},
-	{tokenBetween, "between", 0, 0},
-	{tokenLike, "like", 0, 0},
-	{tokenCreate, "create", 0, 0},
-	{tokenTable, "table", 0, 0},
-	{tokenView, "view", 0, 0},
-	{tokenDrop, "drop", 0, 0},
-	{tokenAsc, "asc", 0, 0},
-	{tokenDesc, "desc", 0, 0},
-	{tokenAnd, "and", 0, 0},
-	{tokenOr, "or", 0, 0},
-	{tokenNot, "not", 0, 0},
+	{TokenAs, "as", 0, 0},
+	{TokenSelect, "select", 0, 0},
+	{TokenFrom, "from", 0, 0},
+	{TokenJoin, "join", 0, 0},
+	{TokenHaving, "having", 0, 0},
+	{TokenWhere, "where", 0, 0},
+	{TokenUnion, "union", 0, 0},
+	{TokenLimit, "limit", 0, 0},
+	{TokenOffset, "offset", 0, 0},
+	{TokenOn, "on", 0, 0},
+	{TokenBetween, "between", 0, 0},
+	{TokenLike, "like", 0, 0},
+	{TokenCreate, "create", 0, 0},
+	{TokenTable, "table", 0, 0},
+	{TokenView, "view", 0, 0},
+	{TokenDrop, "drop", 0, 0},
+	{TokenAsc, "asc", 0, 0},
+	{TokenDesc, "desc", 0, 0},
+	{TokenAnd, "and", 0, 0},
+	{TokenOr, "or", 0, 0},
+	{TokenNot, "not", 0, 0},
 	//{tokenDistinct, "distinct", 0, 0},
-	{tokenGroupBy, "group by", 0, 0},
+	{TokenGroupBy, "group by", 0, 0},
 }
 
 var symbols = []struct {
-	Type  tokenType
+	Type  TokenType
 	Value string
 }{
-	{tokenEqual, "="},
-	{tokenNotEqual, "<>"},
-	{tokenNotEqual, "!="},
-	{tokenGreater, ">"},
-	{tokenGreaterEqual, ">="},
-	{tokenLesser, "<"},
-	{tokenLesserEqual, "<="},
-	{tokenQuestionMark, "?"},
-	{tokenWildcard, "%"},
-	{tokenAsterisk, "*"},
-	{tokenAdd, "+"},
-	{tokenSubtract, "-"},
-	{tokenDivide, "/"},
-	{tokenLeftParen, "("},
-	{tokenRightParen, ")"},
-	{tokenDot, "."},
-	{tokenColon, ","},
-	{tokenSemiColon, ";"},
+	{TokenEqual, "="},
+	{TokenNotEqual, "<>"},
+	{TokenNotEqual, "!="},
+	{TokenGreater, ">"},
+	{TokenGreaterEqual, ">="},
+	{TokenLesser, "<"},
+	{TokenLesserEqual, "<="},
+	{TokenQuestionMark, "?"},
+	{TokenWildcard, "%"},
+	{TokenAsterisk, "*"},
+	{TokenAdd, "+"},
+	{TokenSubtract, "-"},
+	{TokenDivide, "/"},
+	{TokenLeftParen, "("},
+	{TokenRightParen, ")"},
+	{TokenDot, "."},
+	{TokenColon, ","},
+	{TokenSemiColon, ";"},
 }
 
 var fns = []tokenItem{
-	{tokenSum, "sum", 0, 0},
-	{tokenMin, "min", 0, 0},
-	{tokenMax, "max", 0, 0},
-	{tokenAvg, "avg", 0, 0},
-	{tokenCount, "count", 0, 0},
-	{tokenGreatest, "greatest", 0, 0},
+	{TokenSum, "sum", 0, 0},
+	{TokenMin, "min", 0, 0},
+	{TokenMax, "max", 0, 0},
+	{TokenAvg, "avg", 0, 0},
+	{TokenCount, "count", 0, 0},
+	{TokenGreatest, "greatest", 0, 0},
 	//{tokenDistinct, "distinct", 0, 0},
 }
 
@@ -146,19 +146,19 @@ func lexText(lex *lexer) StateFn {
 	} else if lex.matchPrefix("order", "ORDER") {
 		return lexOrderBy(lex)
 	} else if lex.matchPrefix("inner", "INNER") {
-		return lexJoin(lex, tokenInnerJoin, 5)
+		return lexJoin(lex, TokenInnerJoin, 5)
 	} else if lex.matchPrefix("outer", "OUTER") {
-		return lexJoin(lex, tokenOuterJoin, 5)
+		return lexJoin(lex, TokenOuterJoin, 5)
 	} else if lex.matchPrefix("left", "LEFT") {
-		return lexJoin(lex, tokenLeftJoin, 4)
+		return lexJoin(lex, TokenLeftJoin, 4)
 	} else if lex.matchPrefix("right", "RIGHT") {
-		return lexJoin(lex, tokenRightJoin, 5)
+		return lexJoin(lex, TokenRightJoin, 5)
 	} else if lex.matchPrefix("join", "JOIN") {
 		if xErr := lex.fastForward(4); xErr != nil {
 			return lex.errorf("fail to tokenize JOIN token at %d", lex.pos)
 		}
 
-		lex.emit(tokenJoin)
+		lex.emit(TokenJoin)
 		return lexText
 	}
 
@@ -195,10 +195,10 @@ func lexText(lex *lexer) StateFn {
 	if nr1 == eof {
 		// Correctly reached EOF.
 		if lex.pos > lex.start {
-			lex.emit(tokenText)
+			lex.emit(TokenText)
 		}
 
-		lex.emit(tokenEOF) //signal end of file token
+		lex.emit(TokenEOF) //signal end of file token
 		return nil         //stop run loop
 	}
 
@@ -208,7 +208,7 @@ func lexText(lex *lexer) StateFn {
 }
 
 //lexKeyword
-func lexKeyword(lex *lexer, keyword string, tokenTypee tokenType) StateFn {
+func lexKeyword(lex *lexer, keyword string, tokenTypee TokenType) StateFn {
 	lex.fastForward(len(keyword))
 	lex.emit(tokenTypee)
 
@@ -216,14 +216,14 @@ func lexKeyword(lex *lexer, keyword string, tokenTypee tokenType) StateFn {
 }
 
 //lexFunction
-func lexFunction(lex *lexer, keyword string, tokenTypee tokenType) StateFn {
+func lexFunction(lex *lexer, keyword string, tokenTypee TokenType) StateFn {
 	lex.fastForward(len(keyword))
 	lex.emit(tokenTypee)
 
 	return lexText
 }
 
-func lexJoin(lex *lexer, tokenTy tokenType, keywordLen int) StateFn {
+func lexJoin(lex *lexer, tokenTy TokenType, keywordLen int) StateFn {
 
 	//fast forward the keyword
 	if err := lex.fastForward(keywordLen); err != nil {
@@ -260,7 +260,7 @@ func lexJoin(lex *lexer, tokenTy tokenType, keywordLen int) StateFn {
 
 func lexGroupBy(lex *lexer) StateFn {
 	keywordLen := 5 //group
-	tokenTy := tokenGroupBy
+	tokenTy := TokenGroupBy
 
 	//fast forward the keyword
 	if err := lex.fastForward(keywordLen); err != nil {
@@ -303,7 +303,7 @@ func lexGroupBy(lex *lexer) StateFn {
 
 func lexOrderBy(lex *lexer) StateFn {
 	keywordLen := 5 //order
-	tokenTy := tokenOrderBy
+	tokenTy := TokenOrderBy
 
 	//fast forward the keyword
 	if err := lex.fastForward(keywordLen); err != nil {
@@ -361,7 +361,7 @@ func lexNumber(l *lexer) StateFn {
 		return l.errorf("bad number syntax: %q",
 			l.input[l.start:l.pos])
 	}
-	l.emit(tokenNumber)
+	l.emit(TokenNumber)
 	return lexText
 }
 
@@ -385,7 +385,7 @@ func lexParameter(lex *lexer) StateFn {
 	}
 
 	//push parameter token to feeder
-	lex.emit(tokenParameter)
+	lex.emit(TokenParameter)
 
 	return lexText
 }
@@ -399,7 +399,7 @@ func lexQuoteString(lex *lexer) StateFn {
 		if r == eof {
 			return lex.errorf("Syntax error, quoted string not close before reach end of file")
 		} else if r == '\'' {
-			lex.emit(tokenString)
+			lex.emit(TokenString)
 			return lexText
 		}
 	}
@@ -414,7 +414,7 @@ func lexQuoteDoubleString(lex *lexer) StateFn {
 		if r == eof {
 			return lex.errorf("Syntax error, quoted string not close before reach end of file")
 		} else if r == '"' {
-			lex.emit(tokenString)
+			lex.emit(TokenString)
 			return lexText
 		}
 	}
@@ -427,7 +427,7 @@ func lexLiteral(lex *lexer) StateFn {
 		for { //loop til reach backquote
 			r = lex.next()
 			if r == '`' {
-				lex.emit(tokenLiteral)
+				lex.emit(TokenLiteral)
 				return lexText
 			} else if !isLiteralCharacter(r) {
 				return lex.errorf(
@@ -440,7 +440,7 @@ func lexLiteral(lex *lexer) StateFn {
 			r = lex.next()
 			if !isLiteralCharacter(r) {
 				lex.backup() //backward one rune since latest run is not valid literal
-				lex.emit(tokenLiteral)
+				lex.emit(TokenLiteral)
 				return lexText
 			}
 		}

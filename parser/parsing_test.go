@@ -109,6 +109,11 @@ func Test_parseExpression(t *testing.T) {
 		t.Error(err)
 	}
 
+	token = tokenize("-12 + (5 * (a.b - g)) / bahamut.dark_flare")
+	if _, err := parseExpresion(token, 0); err != nil {
+		t.Error(err)
+	}
+
 	token = tokenize("-b + (5 * -g)")
 	if _, err := parseExpresion(token, 0); err != nil {
 		t.Error(err)
@@ -584,7 +589,7 @@ func Test_parseQuerySelect(t *testing.T) {
 	} else if len(query.ChildNodes) != 8 {
 		t.Errorf("expect has 8 nodes but get %d instead", len(query.ChildNodes))
 		for _, node := range query.ChildNodes {
-			t.Logf("%s %d-%d", node.DataType, node.StartPosition, node.EndPosition)
+			t.Logf("%T %d-%d", node.DataType, node.StartPosition, node.EndPosition)
 		}
 	}
 }
@@ -599,7 +604,7 @@ func Test_parseQuery(t *testing.T) {
 	if query != nil && len(query.ChildNodes) != 2 {
 		t.Errorf("Expect child nodes is 2 but get %d instead", len(query.ChildNodes))
 		for i := 0; i < len(query.ChildNodes); i++ {
-			t.Logf("%d => %s", i, query.ChildNodes[i].DataType)
+			t.Logf("%d => %T", i, query.ChildNodes[i].DataType)
 		}
 	}
 
@@ -611,7 +616,7 @@ func Test_parseQuery(t *testing.T) {
 	if query != nil && len(query.ChildNodes) != 1 {
 		t.Errorf("Expect child nodes is 1 but get %d instead", len(query.ChildNodes))
 		for i := 0; i < len(query.ChildNodes); i++ {
-			t.Logf("%d => %s", i, query.ChildNodes[i].DataType)
+			t.Logf("%d => %T", i, query.ChildNodes[i].DataType)
 		}
 	}
 }

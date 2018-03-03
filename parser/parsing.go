@@ -16,7 +16,7 @@ func parseParenthesis(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 
 	tmpStartToken := []tokenItem{}
 
-	if source[startIndex].Type != tokenLeftParen {
+	if source[startIndex].Type != TokenLeftParen {
 		return nil, errors.New("start token is not left parenthesis")
 	}
 
@@ -24,9 +24,9 @@ func parseParenthesis(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	tmpStartToken = append(tmpStartToken, source[startIndex])
 
 	for i := (startIndex + 1); i < len(source); i++ {
-		if source[i].Type == tokenLeftParen {
+		if source[i].Type == TokenLeftParen {
 			tmpStartToken = append(tmpStartToken, source[i])
-		} else if source[i].Type == tokenRightParen {
+		} else if source[i].Type == TokenRightParen {
 
 			if len(tmpStartToken) > 1 {
 				tmpStartToken = tmpStartToken[:len(tmpStartToken)-1]
@@ -36,7 +36,7 @@ func parseParenthesis(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 				stopPos = i
 				break
 			}
-		} else if source[i].Type == tokenEOF {
+		} else if source[i].Type == TokenEOF {
 			break
 		}
 	}
@@ -74,8 +74,8 @@ func parseField(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	endIndex := ast.EndPosition
 
 	if len(source) > (ast.EndPosition + 2) {
-		if source[ast.EndPosition+1].Type == tokenAs &&
-			source[ast.EndPosition+2].Type == tokenLiteral {
+		if source[ast.EndPosition+1].Type == TokenAs &&
+			source[ast.EndPosition+2].Type == TokenLiteral {
 			endIndex = ast.EndPosition + 2
 
 			nodes = append(nodes, SyntaxTree{
@@ -103,13 +103,13 @@ func parseExpresion(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	//expr = <number>
 	//expr = <string>
 	//expr = (<expr>)
+	//expr = -(<expr>)
 	//expr = <operator><expr>
 	//expr = <expr><operator><expr>
 	//expr = <fn>
 
 	expectOperator := false
 	endIndex := -1
-	unarySign := 0
 
 	nodes := []SyntaxTree{}
 
@@ -119,7 +119,6 @@ func parseExpresion(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		if expectOperator {
 			if isOperatorToken(source[i]) {
 				expectOperator = false
-				unarySign = 0
 				nodes = append(nodes, SyntaxTree{
 					ChildNodes:    []SyntaxTree{},
 					StartPosition: i,
@@ -141,25 +140,14 @@ func parseExpresion(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		//check is operand or not
 		if isOperandToken(source[i]) {
 
-			if source[i].Type == tokenLiteral &&
+			if source[i].Type == TokenLiteral &&
 				(i+2) < len(source) &&
-				source[i+1].Type == tokenDot &&
-				(source[i+2].Type == tokenLiteral || source[i+2].Type == tokenAsterisk) {
+				source[i+1].Type == TokenDot &&
+				(source[i+2].Type == TokenLiteral || source[i+2].Type == TokenAsterisk) {
 				i += 2
 			}
 
 			expectOperator = true
-			if unarySign == 1 {
-				nodes = append(nodes, SyntaxTree{
-					ChildNodes:    []SyntaxTree{},
-					StartPosition: currentLoop - 1,
-					EndPosition:   currentLoop,
-					Source:        source,
-					DataType:      NodeUnaryOperator,
-				})
-
-				unarySign = 0
-			}
 			nodes = append(nodes, SyntaxTree{
 				ChildNodes:    []SyntaxTree{},
 				StartPosition: currentLoop,
@@ -168,14 +156,36 @@ func parseExpresion(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 				DataType:      NodeOperand,
 			})
 			continue
-		} else if source[i].Type == tokenAdd || source[i].Type == tokenSubtract {
-			if unarySign > 0 {
-				return nil, fmt.Errorf(
-					"invalid syntax found at position %d (%s)",
-					source[i].Pos, source[i].String())
+		} else if source[i].Type == TokenSubtract { //it is unary expression
+			tmpExpr, tmpExprErr := parseExpresion(source, i+1)
+			if tmpExprErr != nil {
+				return nil, tmpExprErr
 			}
 
-			unarySign++
+			//remove over-nested node
+			if len(tmpExpr.ChildNodes) == 1 && tmpExpr.ChildNodes[0].DataType == NodeOperand {
+				tmpExpr = &tmpExpr.ChildNodes[0]
+			}
+
+			nodes = append(nodes, SyntaxTree{
+				ChildNodes: []SyntaxTree{
+					SyntaxTree{
+						ChildNodes:    []SyntaxTree{},
+						StartPosition: i,
+						EndPosition:   i,
+						Source:        source,
+						DataType:      NodeOperator,
+					},
+					*tmpExpr,
+				},
+				StartPosition: i,
+				EndPosition:   tmpExpr.EndPosition,
+				Source:        source,
+				DataType:      NodeUnary,
+			})
+
+			expectOperator = true
+			i = tmpExpr.EndPosition
 			continue
 		} else if isFunctionToken(source[i]) {
 			funcc, funccErr := parseFunction(source, i)
@@ -184,22 +194,10 @@ func parseExpresion(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			}
 
 			i = funcc.EndPosition
-			expectOperator = true
-			if unarySign == 1 {
-				nodes = append(nodes, SyntaxTree{
-					ChildNodes:    []SyntaxTree{},
-					StartPosition: currentLoop - 1,
-					EndPosition:   currentLoop,
-					Source:        source,
-					DataType:      NodeUnaryOperator,
-				})
-
-				unarySign = 0
-			}
 			nodes = append(nodes, *funcc)
 			expectOperator = true
 			continue
-		} else if source[i].Type == tokenLeftParen {
+		} else if source[i].Type == TokenLeftParen {
 			//test parse parenthesis
 			tmpBracket, bracketErr := parseParenthesis(source, i)
 			if bracketErr != nil {
@@ -221,17 +219,14 @@ func parseExpresion(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 
 			i = tmpBracket.EndPosition
 			expectOperator = true
-			if unarySign == 1 {
-				nodes = append(nodes, SyntaxTree{
-					ChildNodes:    []SyntaxTree{},
-					StartPosition: currentLoop - 1,
-					EndPosition:   currentLoop,
-					Source:        source,
-					DataType:      NodeUnaryOperator,
-				})
 
-				unarySign = 0
+			//trim nested nodes
+			if len(expr2.ChildNodes) == 1 &&
+				(expr2.ChildNodes[0].DataType == NodeOperand ||
+					expr2.ChildNodes[0].DataType == NodeFunction) {
+				expr2 = &expr2.ChildNodes[0]
 			}
+
 			nodes = append(nodes, *expr2)
 			continue
 		}
@@ -254,29 +249,29 @@ func parseExpresion(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 }
 
 func isOperatorToken(item tokenItem) bool {
-	return item.Type == tokenAdd || item.Type == tokenBetween ||
-		item.Type == tokenDivide || item.Type == tokenEqual ||
-		item.Type == tokenGreater || item.Type == tokenGreaterEqual ||
-		item.Type == tokenLesser || item.Type == tokenLesserEqual ||
-		item.Type == tokenLike || item.Type == tokenNot ||
-		item.Type == tokenNotEqual || item.Type == tokenSubtract ||
-		item.Type == tokenAsterisk
+	return item.Type == TokenAdd || item.Type == TokenBetween ||
+		item.Type == TokenDivide || item.Type == TokenEqual ||
+		item.Type == TokenGreater || item.Type == TokenGreaterEqual ||
+		item.Type == TokenLesser || item.Type == TokenLesserEqual ||
+		item.Type == TokenLike || item.Type == TokenNot ||
+		item.Type == TokenNotEqual || item.Type == TokenSubtract ||
+		item.Type == TokenAsterisk
 }
 
 func isOperandToken(item tokenItem) bool {
-	return item.Type == tokenLiteral ||
-		item.Type == tokenNumber ||
-		item.Type == tokenString ||
-		item.Type == tokenAsterisk
+	return item.Type == TokenLiteral ||
+		item.Type == TokenNumber ||
+		item.Type == TokenString ||
+		item.Type == TokenAsterisk
 }
 
 func isFunctionToken(item tokenItem) bool {
-	return item.Type == tokenAvg ||
-		item.Type == tokenCount ||
+	return item.Type == TokenAvg ||
+		item.Type == TokenCount ||
 		//item.Type == tokenDistinct ||
-		item.Type == tokenMax ||
-		item.Type == tokenMin ||
-		item.Type == tokenSum
+		item.Type == TokenMax ||
+		item.Type == TokenMin ||
+		item.Type == TokenSum
 }
 
 func parseFunction(source []tokenItem, startIndex int) (*SyntaxTree, error) {
@@ -356,12 +351,12 @@ func parseJoin(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			source[startIndex].String())
 	}
 	tmp1 := source[startIndex+1]
-	if tmp1.Type == tokenLiteral {
+	if tmp1.Type == TokenLiteral {
 		endPos = startIndex + 1
 
 		if sourceLen > (endPos+2) &&
-			source[endPos+1].Type == tokenDot &&
-			source[endPos+2].Type == tokenLiteral {
+			source[endPos+1].Type == TokenDot &&
+			source[endPos+2].Type == TokenLiteral {
 			endPos += 2
 		}
 
@@ -370,9 +365,9 @@ func parseJoin(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			StartPosition: startIndex + 1,
 			EndPosition:   endPos,
 			Source:        source,
-			DataType:      NodeJoin,
+			DataType:      NodeSource,
 		})
-	} else if tmp1.Type == tokenLeftParen {
+	} else if tmp1.Type == TokenLeftParen {
 		bracket, bracketErr := parseParenthesis(source, startIndex+1)
 		if bracketErr != nil {
 			return nil, bracketErr
@@ -410,8 +405,8 @@ func parseJoin(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 
 	//source alias
 	if sourceLen > (endPos+2) &&
-		source[endPos+1].Type == tokenAs &&
-		source[endPos+2].Type == tokenLiteral {
+		source[endPos+1].Type == TokenAs &&
+		source[endPos+2].Type == TokenLiteral {
 		endPos += 2
 
 		nodes = append(nodes, SyntaxTree{
@@ -422,7 +417,7 @@ func parseJoin(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			DataType:      NodeAlias,
 		})
 	} else if sourceLen > endPos+2 &&
-		source[endPos+1].Type == tokenLiteral {
+		source[endPos+1].Type == TokenLiteral {
 		endPos++
 
 		nodes = append(nodes, SyntaxTree{
@@ -436,7 +431,7 @@ func parseJoin(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 
 	//ON
 	if sourceLen > (endPos+1) &&
-		source[endPos+1].Type == tokenOn {
+		source[endPos+1].Type == TokenOn {
 		// if sourceLen < (endPos + 2) {
 		// 	return nil, fmt.Errorf("Syntax error after ON token at position %d (%s)",
 		// 		source[endPos+1].Pos,
@@ -462,9 +457,9 @@ func parseJoin(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 }
 
 func isJoinToken(token tokenItem) bool {
-	return token.Type == tokenJoin || token.Type == tokenLeftJoin ||
-		token.Type == tokenInnerJoin || token.Type == tokenOuterJoin ||
-		token.Type == tokenRightJoin
+	return token.Type == TokenJoin || token.Type == TokenLeftJoin ||
+		token.Type == TokenInnerJoin || token.Type == TokenOuterJoin ||
+		token.Type == TokenRightJoin
 }
 
 func parseCondition(source []tokenItem, startIndex int) (*SyntaxTree, error) {
@@ -484,7 +479,7 @@ func parseCondition(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 
 		//check have AND / OR token present or not
 		if checkCondSymbol {
-			if source[i].Type == tokenAnd || source[i].Type == tokenOr {
+			if source[i].Type == TokenAnd || source[i].Type == TokenOr {
 				checkCondSymbol = false
 				endIndex = i
 				nodes = append(nodes, SyntaxTree{
@@ -501,7 +496,7 @@ func parseCondition(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			break
 		}
 
-		if source[i].Type == tokenLeftParen { //check is parenthesis or not
+		if source[i].Type == TokenLeftParen { //check is parenthesis or not
 			paren, parenErr := parseParenthesis(source, i)
 			if parenErr != nil {
 				return nil, parenErr
@@ -523,6 +518,12 @@ func parseCondition(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			checkCondSymbol = true
 			i = paren.EndPosition
 			endIndex = paren.EndPosition
+
+			//trim over-nested nodes
+			if len(subCond.ChildNodes) == 1 && subCond.ChildNodes[0].DataType == NodeExpression {
+				subCond = &subCond.ChildNodes[0]
+			}
+
 			nodes = append(nodes, *subCond)
 			continue
 		}
@@ -557,7 +558,7 @@ func parseSelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	//expr = SELECT <cols>
 	//cols = <expression>
 	//cols = <expression>, <cols>
-	if source[startIndex].Type != tokenSelect {
+	if source[startIndex].Type != TokenSelect {
 		return nil, fmt.Errorf(
 			"Expect token SELECT but get %s instead at position %d",
 			source[startIndex].String(),
@@ -570,7 +571,7 @@ func parseSelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	checkColon := false
 	for i := index; i < len(source); i++ {
 		if checkColon == true {
-			if source[i].Type == tokenColon {
+			if source[i].Type == TokenColon {
 				checkColon = false
 				index = i
 				continue
@@ -594,7 +595,7 @@ func parseSelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		//check has alias or not
 		if len(source) > (i + 1) {
 			//log.Printf("i = %d, (%s)", i+1, source[i+1].String())
-			if source[i+1].Type == tokenLiteral {
+			if source[i+1].Type == TokenLiteral {
 				i++
 				colNodes = append(colNodes, SyntaxTree{
 					ChildNodes:    []SyntaxTree{},
@@ -612,10 +613,10 @@ func parseSelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 				})
 				index = i
 				continue
-			} else if source[i+1].Type == tokenAs {
+			} else if source[i+1].Type == TokenAs {
 				if len(source) > (i + 2) {
 
-					if source[i+2].Type == tokenLiteral {
+					if source[i+2].Type == TokenLiteral {
 						i += 2
 						colNodes = append(colNodes, SyntaxTree{
 							ChildNodes:    []SyntaxTree{},
@@ -671,7 +672,7 @@ func parseFrom(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	//src = <literal>
 	//src = <literal>.<literal>
 	//src = <selectExpr>
-	if source[startIndex].Type != tokenFrom {
+	if source[startIndex].Type != TokenFrom {
 		return nil, fmt.Errorf(
 			"Syntax error expect token SELECT at position %d", source[startIndex].Pos)
 	}
@@ -681,7 +682,7 @@ func parseFrom(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	var bracket *SyntaxTree
 	var fromSource *SyntaxTree
 
-	if len(source) > index && source[index].Type == tokenLeftParen {
+	if len(source) > index && source[index].Type == TokenLeftParen {
 		tmp, bracketErr := parseParenthesis(source, index)
 		if bracketErr != nil {
 			return nil, bracketErr
@@ -701,9 +702,9 @@ func parseFrom(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		}
 		index = expr.EndPosition
 	} else if len(source) > (index+3) &&
-		source[index].Type == tokenLiteral &&
-		source[index+1].Type == tokenDot &&
-		source[index+2].Type == tokenLiteral {
+		source[index].Type == TokenLiteral &&
+		source[index+1].Type == TokenDot &&
+		source[index+2].Type == TokenLiteral {
 		index += 2
 		fromSource = &SyntaxTree{
 			ChildNodes:    []SyntaxTree{},
@@ -712,7 +713,7 @@ func parseFrom(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			Source:        source,
 			DataType:      NodeSource,
 		}
-	} else if len(source) > (index) && source[index].Type == tokenLiteral {
+	} else if len(source) > (index) && source[index].Type == TokenLiteral {
 		fromSource = &SyntaxTree{
 			ChildNodes:    []SyntaxTree{},
 			StartPosition: index,
@@ -737,7 +738,7 @@ func parseFrom(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	//check for alias
-	if len(source) > index+1 && source[index+1].Type == tokenLiteral {
+	if len(source) > index+1 && source[index+1].Type == TokenLiteral {
 		index++
 		nodes = append(nodes, SyntaxTree{
 			ChildNodes:    []SyntaxTree{},
@@ -747,8 +748,8 @@ func parseFrom(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 			DataType:      NodeAlias,
 		})
 	} else if len(source) > index+2 &&
-		source[index+1].Type == tokenAs &&
-		source[index+2].Type == tokenLiteral {
+		source[index+1].Type == TokenAs &&
+		source[index+2].Type == TokenLiteral {
 		index += 2
 		nodes = append(nodes, SyntaxTree{
 			ChildNodes:    []SyntaxTree{},
@@ -772,7 +773,7 @@ func parseWhere(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	//pattern
 	//expr = WHERE <condition>
 
-	if source[startIndex].Type != tokenWhere {
+	if source[startIndex].Type != TokenWhere {
 		return nil, fmt.Errorf(
 			"Expect token WHERE found at position %d", source[startIndex].Pos)
 	}
@@ -803,7 +804,7 @@ func parseGroupBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	//order = ASC
 	//order = DESC
 
-	if source[startIndex].Type != tokenGroupBy {
+	if source[startIndex].Type != TokenGroupBy {
 		return nil, fmt.Errorf("Expect token GROUP BY at position %d", source[startIndex].Pos)
 	}
 
@@ -819,9 +820,9 @@ func parseGroupBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		order = nil
 
 		if srcLen > index+2 &&
-			source[index].Type == tokenLiteral &&
-			source[index+1].Type == tokenDot &&
-			source[index+2].Type == tokenLiteral {
+			source[index].Type == TokenLiteral &&
+			source[index+1].Type == TokenDot &&
+			source[index+2].Type == TokenLiteral {
 			col = &SyntaxTree{
 				ChildNodes:    []SyntaxTree{},
 				StartPosition: index,
@@ -830,7 +831,7 @@ func parseGroupBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 				DataType:      NodeColName,
 			}
 			index += 2
-		} else if srcLen > index && source[index].Type == tokenLiteral {
+		} else if srcLen > index && source[index].Type == TokenLiteral {
 			col = &SyntaxTree{
 				ChildNodes:    []SyntaxTree{},
 				StartPosition: index,
@@ -847,7 +848,7 @@ func parseGroupBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 
 		//check for order token
 		if srcLen > (index+1) &&
-			(source[index+1].Type == tokenAsc || source[index+1].Type == tokenDesc) {
+			(source[index+1].Type == TokenAsc || source[index+1].Type == TokenDesc) {
 			order = &SyntaxTree{
 				ChildNodes:    []SyntaxTree{},
 				StartPosition: index + 1,
@@ -873,7 +874,7 @@ func parseGroupBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 
 		//check for colon token
 		if srcLen > (index + 1) {
-			if source[index+1].Type == tokenColon {
+			if source[index+1].Type == TokenColon {
 				index += 2
 				continue
 			}
@@ -904,7 +905,7 @@ func parseOrderBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	//cols = <expression> <order>
 	//order = ASC
 	//order = DESC
-	if source[startIndex].Type != tokenOrderBy {
+	if source[startIndex].Type != TokenOrderBy {
 		return nil, fmt.Errorf("Expect token ORDER BY at position %d", source[startIndex].Pos)
 	}
 
@@ -920,9 +921,9 @@ func parseOrderBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		order = nil
 
 		if srcLen > index+2 &&
-			source[index].Type == tokenLiteral &&
-			source[index+1].Type == tokenDot &&
-			source[index+2].Type == tokenLiteral {
+			source[index].Type == TokenLiteral &&
+			source[index+1].Type == TokenDot &&
+			source[index+2].Type == TokenLiteral {
 			col = &SyntaxTree{
 				ChildNodes:    []SyntaxTree{},
 				StartPosition: index,
@@ -931,7 +932,7 @@ func parseOrderBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 				DataType:      NodeColName,
 			}
 			index += 2
-		} else if srcLen > index && source[index].Type == tokenLiteral {
+		} else if srcLen > index && source[index].Type == TokenLiteral {
 			col = &SyntaxTree{
 				ChildNodes:    []SyntaxTree{},
 				StartPosition: index,
@@ -948,7 +949,7 @@ func parseOrderBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 
 		//check for order token
 		if srcLen > (index+1) &&
-			(source[index+1].Type == tokenAsc || source[index+1].Type == tokenDesc) {
+			(source[index+1].Type == TokenAsc || source[index+1].Type == TokenDesc) {
 			order = &SyntaxTree{
 				ChildNodes:    []SyntaxTree{},
 				StartPosition: index + 1,
@@ -974,7 +975,7 @@ func parseOrderBy(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 
 		//check for colon token
 		if srcLen > (index + 1) {
-			if source[index+1].Type == tokenColon {
+			if source[index+1].Type == TokenColon {
 				index += 2
 				continue
 			}
@@ -1000,7 +1001,7 @@ func parseHaving(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	//pattern
 	//expr = HAVING <condition>
 
-	if source[startIndex].Type != tokenHaving {
+	if source[startIndex].Type != TokenHaving {
 		return nil, fmt.Errorf("expect token HAVING at position %d", source[startIndex].Pos)
 	}
 
@@ -1024,7 +1025,7 @@ func parseLimit(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	//expr = LIMIT <integer>,<integer>
 	//expr = LIMIT <integer> OFFSET <integer>
 
-	if source[startIndex].Type != tokenLimit {
+	if source[startIndex].Type != TokenLimit {
 		return nil, fmt.Errorf("Expect token LIMIT at position %d", source[startIndex].Pos)
 	}
 
@@ -1032,9 +1033,9 @@ func parseLimit(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 
 	//LIMIT <integer> OFFSET <integer>
 	if sourceLen > (startIndex+3) &&
-		source[startIndex+1].Type == tokenNumber &&
-		source[startIndex+2].Type == tokenOffset &&
-		source[startIndex+3].Type == tokenNumber {
+		source[startIndex+1].Type == TokenNumber &&
+		source[startIndex+2].Type == TokenOffset &&
+		source[startIndex+3].Type == TokenNumber {
 		return &SyntaxTree{
 			ChildNodes:    []SyntaxTree{},
 			StartPosition: startIndex,
@@ -1044,9 +1045,9 @@ func parseLimit(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		}, nil
 		//LIMIT <integer>,<integer>
 	} else if sourceLen > (startIndex+3) &&
-		source[startIndex+1].Type == tokenNumber &&
-		source[startIndex+2].Type == tokenColon &&
-		source[startIndex+3].Type == tokenNumber {
+		source[startIndex+1].Type == TokenNumber &&
+		source[startIndex+2].Type == TokenColon &&
+		source[startIndex+3].Type == TokenNumber {
 		return &SyntaxTree{
 			ChildNodes:    []SyntaxTree{},
 			StartPosition: startIndex,
@@ -1056,7 +1057,7 @@ func parseLimit(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 		}, nil
 		//LIMIT <integer>
 	} else if sourceLen > (startIndex+1) &&
-		source[startIndex+1].Type == tokenNumber {
+		source[startIndex+1].Type == TokenNumber {
 		return &SyntaxTree{
 			ChildNodes:    []SyntaxTree{},
 			StartPosition: startIndex,
@@ -1099,11 +1100,11 @@ func parseQuerySelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 
 	//****** optional statements
 	//parse JOIN statement
-	if len(source) > index+1 && (source[index+1].Type == tokenJoin ||
-		source[index+1].Type == tokenLeftJoin ||
-		source[index+1].Type == tokenInnerJoin ||
-		source[index+1].Type == tokenOuterJoin ||
-		source[index+1].Type == tokenRightJoin) {
+	if len(source) > index+1 && (source[index+1].Type == TokenJoin ||
+		source[index+1].Type == TokenLeftJoin ||
+		source[index+1].Type == TokenInnerJoin ||
+		source[index+1].Type == TokenOuterJoin ||
+		source[index+1].Type == TokenRightJoin) {
 		joinAST, joinErr := parseJoin(source, index+1)
 		if joinErr == nil {
 			nodes = append(nodes, *joinAST)
@@ -1112,7 +1113,7 @@ func parseQuerySelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	//parse WHERE statement
-	if len(source) > (index+1) && source[index+1].Type == tokenWhere {
+	if len(source) > (index+1) && source[index+1].Type == TokenWhere {
 		whereSyntax, whereSyntaxErr := parseWhere(source, index+1)
 		if whereSyntaxErr == nil {
 			nodes = append(nodes, *whereSyntax)
@@ -1121,7 +1122,7 @@ func parseQuerySelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	//group by
-	if len(source) > (index+1) && source[index+1].Type == tokenGroupBy {
+	if len(source) > (index+1) && source[index+1].Type == TokenGroupBy {
 		groupbyAST, groupbyASTErr := parseGroupBy(source, index+1)
 		if groupbyASTErr == nil {
 			nodes = append(nodes, *groupbyAST)
@@ -1130,7 +1131,7 @@ func parseQuerySelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	//having
-	if len(source) > (index+1) && source[index+1].Type == tokenHaving {
+	if len(source) > (index+1) && source[index+1].Type == TokenHaving {
 		havingAST, havingErr := parseHaving(source, index+1)
 		if havingErr == nil {
 			nodes = append(nodes, *havingAST)
@@ -1139,7 +1140,7 @@ func parseQuerySelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	//order by
-	if len(source) > (index+1) && source[index+1].Type == tokenOrderBy {
+	if len(source) > (index+1) && source[index+1].Type == TokenOrderBy {
 		orderbyAST, orderbyASTErr := parseOrderBy(source, index+1)
 		if orderbyASTErr == nil {
 			nodes = append(nodes, *orderbyAST)
@@ -1148,7 +1149,7 @@ func parseQuerySelect(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	}
 
 	//limit
-	if len(source) > (index+1) && source[index+1].Type == tokenLimit {
+	if len(source) > (index+1) && source[index+1].Type == TokenLimit {
 		limitAST, limitASTErr := parseLimit(source, index+1)
 		if limitASTErr == nil {
 			nodes = append(nodes, *limitAST)
@@ -1180,7 +1181,7 @@ func parseQuery(source []tokenItem, startIndex int) (*SyntaxTree, error) {
 	nodes = append(nodes, *tmp)
 
 	for i := (index + 1); i < len(source); i++ {
-		if source[i].Type == tokenUnion {
+		if source[i].Type == TokenUnion {
 
 			if len(source) > (i + 1) {
 				tmp1, tmp1Err := parseQuerySelect(source, i+1)

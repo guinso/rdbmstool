@@ -49,7 +49,7 @@ func (builder *QueryBuilder) JoinSimple(source string, alias string, category Jo
 	builder.selectDefinition.Join = append(
 		builder.selectDefinition.Join,
 		*NewJoinDefinition(source, alias, category,
-			NewConditionGroupDefinition(condOpr, leftCond, rightCond)))
+			NewConditionGroupDefinition(leftCond, condOpr, rightCond)))
 
 	return builder
 }
@@ -66,9 +66,10 @@ func (builder *QueryBuilder) WhereAnd(
 	operator ConditionOperator, leftExpression string, rightExpression string) *QueryBuilder {
 
 	if builder.selectDefinition.Where == nil {
-		builder.selectDefinition.Where = NewConditionGroupDefinition(operator, leftExpression, rightExpression)
+		builder.selectDefinition.Where = NewConditionGroupDefinition(
+			leftExpression, operator, rightExpression)
 	} else {
-		builder.selectDefinition.Where.And(operator, leftExpression, rightExpression)
+		builder.selectDefinition.Where.And(leftExpression, operator, rightExpression)
 	}
 
 	return builder
@@ -80,9 +81,10 @@ func (builder *QueryBuilder) WhereOR(
 	operator ConditionOperator, leftExpression string, rightExpression string) *QueryBuilder {
 
 	if builder.selectDefinition.Where == nil {
-		builder.selectDefinition.Where = NewConditionGroupDefinition(operator, leftExpression, rightExpression)
+		builder.selectDefinition.Where = NewConditionGroupDefinition(
+			leftExpression, operator, rightExpression)
 	} else {
-		builder.selectDefinition.Where.Or(operator, leftExpression, rightExpression)
+		builder.selectDefinition.Where.Or(leftExpression, operator, rightExpression)
 	}
 
 	return builder
@@ -97,7 +99,7 @@ func (builder *QueryBuilder) WhereGroup(
 	if builder.selectDefinition.Where == nil {
 		builder.selectDefinition.Where = condition
 	} else {
-		builder.selectDefinition.Where.AddGroup(operator, condition)
+		builder.selectDefinition.Where.Group(operator, condition)
 	}
 
 	return builder
