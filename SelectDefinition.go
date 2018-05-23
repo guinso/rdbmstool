@@ -73,7 +73,7 @@ func (query *SelectDefinition) SQL() (string, error) {
 
 	//Where
 	if query.Where != nil {
-		whereSQL, whrErr := query.Where.SQL()
+		whereSQL, whrErr := query.Where.String()
 		if whrErr != nil {
 			return "", errors.New("Failed to generate WHERE SQL string: " + whrErr.Error())
 		}
@@ -98,7 +98,7 @@ func (query *SelectDefinition) SQL() (string, error) {
 
 	//Having
 	if query.Having != nil {
-		havingSQL, haveErr := query.Having.SQL()
+		havingSQL, haveErr := query.Having.String()
 		if haveErr != nil {
 			return "", fmt.Errorf("Failed to generate HAVING SQL string: %s", haveErr.Error())
 		}

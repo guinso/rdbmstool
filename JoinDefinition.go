@@ -9,13 +9,19 @@ import (
 type JoinType uint8
 
 const (
-	JOIN       JoinType = iota + 1
-	INNER_JOIN JoinType = iota + 1
-	OUTER_JOIN JoinType = iota + 1
-	LEFT_JOIN  JoinType = iota + 1
-	RIGHT_JOIN JoinType = iota + 1
+	//Join SQL JOIN type
+	Join JoinType = iota + 1
+	//InnerJoin SQL INNER JOIN type
+	InnerJoin JoinType = iota + 1
+	//OuterJoin SQL OUTER JOIN type
+	OuterJoin JoinType = iota + 1
+	//LeftJoin SQL LEFT JOIN type
+	LeftJoin JoinType = iota + 1
+	//RightJoin SQL RIGHT JOIN type
+	RightJoin JoinType = iota + 1
 )
 
+//JoinDefinition SQL Join definition
 type JoinDefinition struct {
 	source string
 	//OR
@@ -31,19 +37,19 @@ func (join *JoinDefinition) SQL() (string, error) {
 	result := ""
 
 	switch join.Type {
-	case JOIN:
+	case Join:
 		result = result + "JOIN"
 		break
-	case INNER_JOIN:
+	case InnerJoin:
 		result = result + "INNER JOIN"
 		break
-	case OUTER_JOIN:
+	case OuterJoin:
 		result = result + "OUTER JOIN"
 		break
-	case LEFT_JOIN:
+	case LeftJoin:
 		result = result + "LEFT JOIN"
 		break
-	case RIGHT_JOIN:
+	case RightJoin:
 
 	default:
 		return "", fmt.Errorf("Unsupported JOIN type found: %d", join.Type)
@@ -66,28 +72,31 @@ func (join *JoinDefinition) SQL() (string, error) {
 		result = result + " AS " + join.Alias
 	}
 
-	conditionSQL, sqlErr := join.Where.SQL()
-	if sqlErr != nil {
-		return "", fmt.Errorf("Unable to generate JOIN condition SQL string: %s", sqlErr.Error())
+	if join.Where != nil {
+		conditionSQL, sqlErr := join.Where.String()
+		if sqlErr != nil {
+			return "", fmt.Errorf("Unable to generate JOIN condition SQL string: %s", sqlErr.Error())
+		}
+
+		result = result + " ON " + conditionSQL
 	}
 
-	return result + " ON " + conditionSQL, nil
-
+	return result, nil
 }
 
 //NewJoinDefinition create new Join statement definition instance
 func NewJoinDefinition(source string, alias string,
-	category JoinType, condition *ConditionDefinition) *JoinDefinition {
+	category JoinType, condition string) *JoinDefinition {
 	return &JoinDefinition{
 		source:   source,
 		subQuery: nil,
 		Alias:    alias,
 		Type:     category,
-		Where:    condition}
+		Where:    NewCondition(condition)}
 }
 
-//NewJoinDefinitionSubQuery create new Join statement definition instance from sub query as source
-func NewJoinDefinitionSubQuery(source *SelectDefinition, alias string,
+//NewJoinDefinitionComplex create new Join statement definition instance from sub query as source
+func NewJoinDefinitionComplex(source *SelectDefinition, alias string,
 	category JoinType, condition *ConditionDefinition) *JoinDefinition {
 	return &JoinDefinition{
 		source:   "",

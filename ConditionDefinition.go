@@ -1,131 +1,170 @@
 package rdbmstool
 
-import (
-	"fmt"
-	"strings"
-)
-
 //ConditionOperator logic operator for WHERE clause: =,<>,>,>=,<,<=, etc.
 type ConditionOperator uint8
 
 //Condition operator constants
 const (
-	EQUAL ConditionOperator = iota
-	NOT_EQUAL
-	GREATER_THAN
-	LESS_THAN
-	GREATER_THAN_EQUAL
-	LESS_THAN_EQUAL
-	BETWEEN
-	LIKE
-	IN
-	UNARY_OPERATOR
+	//None no operator need to specify, use this couple with first condition
+	None ConditionOperator = iota
+	//And SQL AND condition operator
+	And
+	//Or SQL OR condition operator
+	Or
 )
 
 func (operator ConditionOperator) String() string {
 	switch operator {
-	case EQUAL:
-		return "="
-	case NOT_EQUAL:
-		return "<>"
-	case GREATER_THAN:
-		return ">"
-	case LESS_THAN:
-		return "<"
-	case GREATER_THAN_EQUAL:
-		return "<="
-	case LESS_THAN_EQUAL:
-		return "<="
-	case BETWEEN:
-		return "BETWEEN"
-	case LIKE:
-		return "LIKE"
-	case IN:
-		return "IN"
+	case And:
+		return "AND"
+	case Or:
+		return "OR"
 	default:
 		return ""
 	}
 }
 
-//ConditionDefinition simplest definition for a where statement
+//ConditionDefinition SQL condition definition version 2
 type ConditionDefinition struct {
-	LeftExpression  string
-	RightExpression string            //set to empty string if condition is unary operation
-	Operator        ConditionOperator //set to UNARY_OPERATOR if condition is unary operation
+	Condition        string
+	ConditionComplex *ConditionDefinition
+	Operator         ConditionOperator
 
-	LeftComplex  *ConditionDefinition //use leftComplex for 'left hand side' expression if the expression is nested
-	RightComplex *ConditionDefinition //use rightComplex for 'right hand side' expression if the expression is nested
+	Conditions []ConditionDefinition
 }
 
-func (cond *ConditionDefinition) leftString() (string, error) {
-	if cond.LeftComplex == nil {
-		return cond.LeftExpression, nil
+//NewCondition create a new binary condition
+func NewCondition(expression string) *ConditionDefinition {
+	return &ConditionDefinition{
+		Condition:        expression,
+		ConditionComplex: nil,
+		Operator:         None,
+		Conditions:       []ConditionDefinition{},
 	}
-
-	leftStr, err := cond.LeftComplex.SQL()
-	if err != nil {
-		return "", err
-	}
-
-	return "(" + leftStr + ")", nil
 }
 
-func (cond *ConditionDefinition) rightString() (string, error) {
-	if cond.Operator == UNARY_OPERATOR {
-		return "", nil
-	} else if cond.RightComplex == nil {
-		return cond.RightExpression, nil
+//String generate SQL statement
+func (cond *ConditionDefinition) String() (string, error) {
+	sqlString := ""
+	if cond.IsSimpleExpression() {
+		sqlString = cond.Condition
 	} else {
-		rightStr, err := cond.RightComplex.SQL()
-
-		if err != nil {
-			return "", err
+		tmpStr, tmpErr := cond.ConditionComplex.String()
+		if tmpErr != nil {
+			return "", tmpErr
 		}
 
-		return "(" + rightStr + ")", nil
+		sqlString = "(" + tmpStr + ")"
 	}
+
+	if len(cond.Conditions) == 0 {
+		return sqlString, nil
+	}
+
+	for i := 0; i < len(cond.Conditions); i++ {
+		tmpSQL, tmpErr := cond.Conditions[i].String()
+		if tmpErr != nil {
+			return "", tmpErr
+		}
+
+		sqlString += " " + cond.Conditions[i].Operator.String() + " " + tmpSQL
+	}
+
+	return sqlString, nil
 }
 
-//SQL generate SQL string for condition statement
-func (cond *ConditionDefinition) SQL() (string, error) {
-	if cond.Operator == UNARY_OPERATOR {
-		return cond.leftString()
-	}
+//SetCondition set condition with expression string
+func (cond *ConditionDefinition) SetCondition(condition string) *ConditionDefinition {
+	cond.Condition = condition
+	cond.Operator = None
+	cond.ConditionComplex = nil
+	cond.Conditions = nil
 
-	if strings.Compare(cond.Operator.String(), "") == 0 {
-		return "", fmt.Errorf("unsupported operator detected %T", cond.Operator)
-	}
-
-	leftStr, leftErr := cond.leftString()
-	if leftErr != nil {
-		return "", leftErr
-	}
-
-	rightStr, rightErr := cond.rightString()
-	if rightErr != nil {
-		return "", rightErr
-	}
-
-	return leftStr + " " + cond.Operator.String() + " " + rightStr, nil
+	return cond
 }
 
-//NewConditionDefinition create new condition definition instance
-func NewConditionDefinition(lhs string, operator ConditionOperator,
-	rhs string) *ConditionDefinition {
-	return &ConditionDefinition{
-		LeftExpression:  lhs,
-		RightExpression: rhs,
-		Operator:        operator,
-		LeftComplex:     nil,
-		RightComplex:    nil,
-	}
+//SetComplex set condition with ConditionDefinition instance
+func (cond *ConditionDefinition) SetComplex(condDef *ConditionDefinition) *ConditionDefinition {
+	cond.Condition = ""
+	cond.Operator = None
+	cond.ConditionComplex = condDef
+	cond.Conditions = nil
+
+	return cond
 }
 
-//SetAsUnaryOperation set condition as unary operation
-func (cond *ConditionDefinition) SetAsUnaryOperation(expression string) {
-	cond.LeftComplex = nil
-	cond.RightComplex = nil
-	cond.Operator = UNARY_OPERATOR
-	cond.RightExpression = ""
-	cond.LeftExpression = expression
+//AddAnd Append AND simple string expression condition
+func (cond *ConditionDefinition) AddAnd(expression string) *ConditionDefinition {
+	cond.Conditions = append(cond.Conditions, ConditionDefinition{
+		Condition:        expression,
+		ConditionComplex: nil,
+		Operator:         And,
+		Conditions:       nil,
+	})
+
+	return cond
+}
+
+//AddAndComplex Append AND nested condition
+func (cond *ConditionDefinition) AddAndComplex(condition *ConditionDefinition) *ConditionDefinition {
+	cond.Conditions = append(cond.Conditions, ConditionDefinition{
+		Condition:        "",
+		ConditionComplex: condition,
+		Operator:         And,
+		Conditions:       nil,
+	})
+
+	return cond
+}
+
+//AddOr Append AND simple string expression condition
+func (cond *ConditionDefinition) AddOr(expression string) *ConditionDefinition {
+	cond.Conditions = append(cond.Conditions, ConditionDefinition{
+		Condition:        expression,
+		ConditionComplex: nil,
+		Operator:         Or,
+		Conditions:       nil,
+	})
+
+	return cond
+}
+
+//AddOrComplex Append AND nested condition
+func (cond *ConditionDefinition) AddOrComplex(condition *ConditionDefinition) *ConditionDefinition {
+	cond.Conditions = append(cond.Conditions, ConditionDefinition{
+		Condition:        "",
+		ConditionComplex: condition,
+		Operator:         Or,
+		Conditions:       nil,
+	})
+
+	return cond
+}
+
+//AddComplex Append nested condition with ConditionDefinition instance
+func (cond *ConditionDefinition) AddComplex(
+	operator ConditionOperator, condition *ConditionDefinition) *ConditionDefinition {
+
+	cond.Conditions = append(cond.Conditions, ConditionDefinition{
+		Condition:        "",
+		ConditionComplex: condition,
+		Operator:         operator,
+		Conditions:       nil,
+	})
+
+	return cond
+}
+
+//GetConditions get condition by index
+func (cond *ConditionDefinition) GetConditions(index int) *ConditionDefinition {
+	if index >= 0 && index < len(cond.Conditions) {
+		return &cond.Conditions[index]
+	}
+
+	return nil
+}
+
+//IsSimpleExpression check first condition is simple expression instead of nested condition
+func (cond *ConditionDefinition) IsSimpleExpression() bool {
+	return cond.ConditionComplex == nil
 }

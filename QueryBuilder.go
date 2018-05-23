@@ -1,5 +1,9 @@
 package rdbmstool
 
+import (
+	"strings"
+)
+
 //QueryBuilder SQl Select statement builder
 type QueryBuilder struct {
 	selectDefinition *SelectDefinition
@@ -9,15 +13,15 @@ type QueryBuilder struct {
 func NewQueryBuilder() *QueryBuilder {
 	return &QueryBuilder{
 		selectDefinition: &SelectDefinition{
-			Select:  []SelectColumnDefinition{},
+			Select:  nil,
 			From:    nil,
-			Join:    []JoinDefinition{},
+			Join:    nil,
 			Where:   nil,
-			GroupBy: []GroupByDefinition{},
+			GroupBy: nil,
 			Having:  nil,
-			OrderBy: []OrderByDefinition{},
+			OrderBy: nil,
 			Limit:   nil,
-			Union:   []SelectDefinition{},
+			Union:   nil,
 		}}
 }
 
@@ -30,83 +34,131 @@ func (builder *QueryBuilder) Select(expression string, alias string) *QueryBuild
 	return builder
 }
 
+//SelectClear clear all select columns
+func (builder *QueryBuilder) SelectClear() *QueryBuilder {
+	builder.selectDefinition.Select = nil
+	return builder
+}
+
 //From set from statement
 func (builder *QueryBuilder) From(expression string, alias string) *QueryBuilder {
 	builder.selectDefinition.From = NewFromDefinition(expression, alias)
 	return builder
 }
 
-//Join  add join statement
-func (builder *QueryBuilder) Join(join *JoinDefinition) *QueryBuilder {
+//JoinComplex  set join statement
+func (builder *QueryBuilder) JoinComplex(join *JoinDefinition) *QueryBuilder {
+	builder.selectDefinition.Join = []JoinDefinition{*join}
+	return builder
+}
+
+//JoinComplexAdd append join statement
+func (builder *QueryBuilder) JoinComplexAdd(join *JoinDefinition) *QueryBuilder {
 	builder.selectDefinition.Join = append(builder.selectDefinition.Join, *join)
 	return builder
 }
 
-//JoinSimple add simple Join statement
-func (builder *QueryBuilder) JoinSimple(source string, alias string, category JoinType,
-	leftCond string, rightCond string, condOpr ConditionOperator) *QueryBuilder {
+//Join set simple Join statement
+func (builder *QueryBuilder) Join(source string, alias string, joinType JoinType,
+	condition string) *QueryBuilder {
+
+	builder.selectDefinition.Join = []JoinDefinition{
+		*NewJoinDefinition(
+			source,
+			alias,
+			joinType,
+			condition)}
+
+	return builder
+}
+
+//JoinAdd append simple Join statement
+func (builder *QueryBuilder) JoinAdd(source string, alias string, joinType JoinType,
+	condition string) *QueryBuilder {
 
 	builder.selectDefinition.Join = append(
 		builder.selectDefinition.Join,
-		*NewJoinDefinition(source, alias, category,
-			NewConditionGroupDefinition(leftCond, condOpr, rightCond)))
+		*NewJoinDefinition(
+			source,
+			alias,
+			joinType,
+			condition))
 
 	return builder
 }
 
-//Where set Where statement
-func (builder *QueryBuilder) Where(where *ConditionGroupDefinition) *QueryBuilder {
-	builder.selectDefinition.Where = where
-	return builder
-}
-
-//WhereAnd append where statement with AND operator
-//if where statement is NULL, it will init as first condition and omit AND
-func (builder *QueryBuilder) WhereAnd(
-	operator ConditionOperator, leftExpression string, rightExpression string) *QueryBuilder {
-
-	if builder.selectDefinition.Where == nil {
-		builder.selectDefinition.Where = NewConditionGroupDefinition(
-			leftExpression, operator, rightExpression)
+//Where set Where condition with simple expression string
+func (builder *QueryBuilder) Where(condition string) *QueryBuilder {
+	if strings.Compare(condition, "") == 0 {
+		builder.selectDefinition.Where = nil
+	} else if builder.selectDefinition.Where == nil {
+		builder.selectDefinition.Where = NewCondition(condition)
 	} else {
-		builder.selectDefinition.Where.And(leftExpression, operator, rightExpression)
+		builder.selectDefinition.Where.SetCondition(condition)
 	}
 
 	return builder
 }
 
-//WhereOR append where statement with OR operator
-//if where statement is NULL, it will init as first condition and omit OR
-func (builder *QueryBuilder) WhereOR(
-	operator ConditionOperator, leftExpression string, rightExpression string) *QueryBuilder {
-
+//WhereAddAnd append AND Where condition with simple expression string
+func (builder *QueryBuilder) WhereAddAnd(condition string) *QueryBuilder {
 	if builder.selectDefinition.Where == nil {
-		builder.selectDefinition.Where = NewConditionGroupDefinition(
-			leftExpression, operator, rightExpression)
+		builder.selectDefinition.Where = NewCondition(condition)
 	} else {
-		builder.selectDefinition.Where.Or(leftExpression, operator, rightExpression)
+		builder.selectDefinition.Where.AddAnd(condition)
 	}
 
 	return builder
 }
 
-//WhereGroup append Where statement with group condition
-//operator: group condition, example OR, AND
-//condition: nested condition, example (a =3 AND (b > 4 OR d <> false))
-func (builder *QueryBuilder) WhereGroup(
-	operator ConditionGroupOperator, condition *ConditionGroupDefinition) *QueryBuilder {
-
+//WhereAddOr append OR Where condition with simple expression string
+func (builder *QueryBuilder) WhereAddOr(condition string) *QueryBuilder {
 	if builder.selectDefinition.Where == nil {
-		builder.selectDefinition.Where = condition
+		builder.selectDefinition.Where = NewCondition(condition)
 	} else {
-		builder.selectDefinition.Where.Group(operator, condition)
+		builder.selectDefinition.Where.AddOr(condition)
 	}
 
 	return builder
 }
 
-//GroupBy add group by statment
+//WhereComplex set where condition with ConditionDefinition
+func (builder *QueryBuilder) WhereComplex(conditionDef *ConditionDefinition) *QueryBuilder {
+	builder.selectDefinition.Where = conditionDef
+
+	return builder
+}
+
+//WhereAddComplex append where condition with ConditionDefinition
+func (builder *QueryBuilder) WhereAddComplex(operator ConditionOperator,
+	conditionDef *ConditionDefinition) *QueryBuilder {
+
+	if builder.selectDefinition.Where == nil {
+		builder.selectDefinition.Where = conditionDef
+	} else {
+		builder.selectDefinition.Where.AddComplex(operator, conditionDef)
+	}
+
+	return builder
+}
+
+//WhereClear clear WHERE statement
+func (builder *QueryBuilder) WhereClear() *QueryBuilder {
+	builder.selectDefinition.Where = nil
+	return builder
+}
+
+//GroupBy set group by statment
 func (builder *QueryBuilder) GroupBy(expression string, isAscending bool) *QueryBuilder {
+	builder.selectDefinition.GroupBy = []GroupByDefinition{GroupByDefinition{
+		Expression: expression,
+		IsAcending: isAscending}}
+
+	return builder
+}
+
+//GroupByAdd append group by statement
+func (builder *QueryBuilder) GroupByAdd(expression string, isAscending bool) *QueryBuilder {
 	builder.selectDefinition.GroupBy = append(builder.selectDefinition.GroupBy, GroupByDefinition{
 		Expression: expression,
 		IsAcending: isAscending})
@@ -114,18 +166,52 @@ func (builder *QueryBuilder) GroupBy(expression string, isAscending bool) *Query
 	return builder
 }
 
-//Having set having statement
-func (builder *QueryBuilder) Having(having *ConditionGroupDefinition) *QueryBuilder {
+//GroupByClear clear GROUP BY statement
+func (builder *QueryBuilder) GroupByClear() *QueryBuilder {
+	builder.selectDefinition.GroupBy = nil
+	return builder
+}
+
+//Having set Having statement with expression string
+func (builder *QueryBuilder) Having(condition string) *QueryBuilder {
+	if strings.Compare(condition, "") == 0 {
+		builder.selectDefinition.Having = nil
+	} else if builder.selectDefinition.Having == nil {
+		builder.selectDefinition.Having = NewCondition(condition)
+	} else {
+		builder.selectDefinition.Having.SetCondition(condition)
+	}
+
+	return builder
+}
+
+//HavingComplex set having statement with ConditionDefinition
+func (builder *QueryBuilder) HavingComplex(having *ConditionDefinition) *QueryBuilder {
 	builder.selectDefinition.Having = having
 	return builder
 }
 
-//OrderBy add order by statement
+//OrderBy set order by statement
 func (builder *QueryBuilder) OrderBy(expression string, isAscending bool) *QueryBuilder {
+	builder.selectDefinition.OrderBy = []OrderByDefinition{OrderByDefinition{
+		Expression:  expression,
+		IsAscending: isAscending}}
+
+	return builder
+}
+
+//OrderByAdd append ORDER BY statement
+func (builder *QueryBuilder) OrderByAdd(expression string, isAscending bool) *QueryBuilder {
 	builder.selectDefinition.OrderBy = append(builder.selectDefinition.OrderBy, OrderByDefinition{
 		Expression:  expression,
 		IsAscending: isAscending})
 
+	return builder
+}
+
+//OrderByClear clear ORDER BY statement
+func (builder *QueryBuilder) OrderByClear() *QueryBuilder {
+	builder.selectDefinition.OrderBy = nil
 	return builder
 }
 
@@ -138,9 +224,15 @@ func (builder *QueryBuilder) Limit(rowCount int, offset int) *QueryBuilder {
 	return builder
 }
 
-//Union add union statement
+//Union append union statement
 func (builder *QueryBuilder) Union(union *SelectDefinition) *QueryBuilder {
 	builder.selectDefinition.Union = append(builder.selectDefinition.Union, *union)
+	return builder
+}
+
+//UnionClear clear UNION statement
+func (builder *QueryBuilder) UnionClear() *QueryBuilder {
+	builder.selectDefinition.Union = nil
 	return builder
 }
 
