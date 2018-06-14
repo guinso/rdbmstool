@@ -17,6 +17,11 @@ func NewTableBuilder() *TableBuilder {
 			Indices:     []IndexKeyDefinition{}}}
 }
 
+//GetTableName get table name
+func (builder *TableBuilder) GetTableName() string {
+	return builder.tableDefinition.Name
+}
+
 //SQL generate table definition SQL statement
 func (builder *TableBuilder) SQL() (string, error) {
 	return builder.tableDefinition.SQL()
