@@ -10,6 +10,11 @@ type MetaQuery interface {
 	GetTableNames(DbHandlerProxy, string, string) ([]string, error)
 
 	//DbHandlerProxy : sql.DB or sql.Tx or compatible with it
+	//string: regular expression to search database name
+	//string: datatable name patterm (can use % as wildcard; example - 'hub_%')
+	GetTableNamesByPattern(DbHandlerProxy, string, string) ([]string, error)
+
+	//DbHandlerProxy : sql.DB or sql.Tx or compatible with it
 	//string: database name
 	//string: datatable name (example 'tax_invoice')
 	GetTableDefinition(DbHandlerProxy, string, string) (*TableDefinition, error)
